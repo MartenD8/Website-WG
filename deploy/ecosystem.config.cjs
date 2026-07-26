@@ -1,4 +1,4 @@
-import path from "path";
+const path = require("path");
 
 // Project root (parent of /deploy)
 const root = path.join(__dirname, "..");
@@ -16,8 +16,6 @@ module.exports = {
         NODE_ENV: "production",
         PORT: 3000,
       },
-      // Load secrets from project .env.local (AUTH_SECRET, ADMIN_*)
-      // Prefer creating .env.production.local on the server.
       max_memory_restart: "512M",
       error_file: path.join(root, "logs/err.log"),
       out_file: path.join(root, "logs/out.log"),
