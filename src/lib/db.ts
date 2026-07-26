@@ -182,6 +182,36 @@ export function verifyPassword(plain: string, hash: string): boolean {
   return bcrypt.compareSync(plain, hash);
 }
 
+/**
+ * Overwrite admin credentials from env (for production recovery).
+ * Call via: npm run admin:reset
+ */
+export function resetAdminFromEnv(): { username: string } {
+  const store = readStore();
+  const username = process.env.ADMIN_USERNAME || "admin";
+  const password = process.env.ADMIN_PASSWORD || "Admin123!";
+  const passwordHash = bcrypt.hashSync(password, 12);
+  const stamp = nowIso();
+
+  if (store.admins.length === 0) {
+    store.admins.push({
+      id: store.nextAdminId++,
+      username,
+      passwordHash,
+      createdAt: stamp,
+    });
+  } else {
+    store.admins[0] = {
+      ...store.admins[0],
+      username,
+      passwordHash,
+    };
+  }
+
+  writeStore(store);
+  return { username };
+}
+
 /** Used by seed script / tests */
 export function replaceAllEvents(events: Omit<Event, "id" | "createdAt" | "updatedAt">[]): void {
   const store = readStore();

@@ -1,12 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   createSessionToken,
-  setSessionCookie,
-  clearSessionCookie,
+  SESSION_COOKIE,
   getSession,
 } from "@/lib/auth";
+import { getMaxAgeSeconds } from "@/lib/session";
 import { findAdminByUsername, verifyPassword } from "@/lib/db";
 import { loginSchema } from "@/lib/validation";
+
+function cookieSecure(request: NextRequest): boolean {
+  if (process.env.COOKIE_SECURE === "true") return true;
+  if (process.env.COOKIE_SECURE === "false") return false;
+  const proto = request.headers.get("x-forwarded-proto");
+  if (proto) return proto.split(",")[0]?.trim() === "https";
+  return process.env.NODE_ENV === "production";
+}
+
+function applySessionCookie(
+  response: NextResponse,
+  token: string,
+  request: NextRequest
+): void {
+  response.cookies.set(SESSION_COOKIE, token, {
+    httpOnly: true,
+    secure: cookieSecure(request),
+    sameSite: "lax",
+    path: "/",
+    maxAge: getMaxAgeSeconds(),
+  });
+}
 
 /** POST /api/auth/login */
 export async function POST(request: NextRequest) {
@@ -24,7 +46,6 @@ export async function POST(request: NextRequest) {
     const { username, password } = parsed.data;
     const admin = findAdminByUsername(username);
 
-    // Constant-time-ish failure: always hash-compare path delay via dummy check
     if (!admin || !verifyPassword(password, admin.passwordHash)) {
       return NextResponse.json(
         { error: "Benutzername oder Passwort ungültig" },
@@ -33,18 +54,19 @@ export async function POST(request: NextRequest) {
     }
 
     const token = await createSessionToken(admin.id, admin.username);
-    await setSessionCookie(token);
-
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       user: { id: admin.id, username: admin.username },
     });
+    applySessionCookie(response, token, request);
+    return response;
   } catch (error) {
     console.error("POST /api/auth/login", error);
-    return NextResponse.json(
-      { error: "Anmeldung fehlgeschlagen" },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error && error.message.includes("AUTH_SECRET")
+        ? "Server-Konfiguration unvollständig (AUTH_SECRET fehlt)"
+        : "Anmeldung fehlgeschlagen";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -61,7 +83,14 @@ export async function GET() {
 }
 
 /** DELETE /api/auth/login – logout */
-export async function DELETE() {
-  await clearSessionCookie();
-  return NextResponse.json({ success: true });
+export async function DELETE(request: NextRequest) {
+  const response = NextResponse.json({ success: true });
+  response.cookies.set(SESSION_COOKIE, "", {
+    httpOnly: true,
+    secure: cookieSecure(request),
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
+  return response;
 }

@@ -10,6 +10,7 @@ export {
   SESSION_COOKIE,
   createSessionToken,
   verifySessionToken,
+  getMaxAgeSeconds,
 } from "@/lib/session";
 
 export async function setSessionCookie(token: string): Promise<void> {

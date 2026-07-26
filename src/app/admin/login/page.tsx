@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   Alert,
   Box,
@@ -18,7 +17,6 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { SiteHeader } from "@/components/SiteHeader";
 
 export default function AdminLoginPage() {
-  const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +30,7 @@ export default function AdminLoginPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ username, password }),
       });
       const data = (await res.json()) as { error?: string };
@@ -39,8 +38,7 @@ export default function AdminLoginPage() {
         setError(data.error || "Anmeldung fehlgeschlagen");
         return;
       }
-      router.replace("/admin");
-      router.refresh();
+      window.location.assign("/admin");
     } catch {
       setError("Netzwerkfehler – bitte erneut versuchen");
     } finally {
