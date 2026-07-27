@@ -1,7 +1,7 @@
 import { Box, Container, Typography } from "@mui/material";
 import { SiteHeader } from "@/components/SiteHeader";
 import { CalendarGrid } from "@/components/CalendarGrid";
-import { getActiveEvents } from "@/lib/db";
+import { getActiveEvents, getBeerStats } from "@/lib/db";
 import { getCalendarYear } from "@/lib/calendar";
 
 export const dynamic = "force-dynamic";
@@ -9,12 +9,17 @@ export const dynamic = "force-dynamic";
 export default function HomePage() {
   const events = getActiveEvents();
   const year = getCalendarYear();
+  const beerStats = getBeerStats();
 
   return (
     <Box component="main" sx={{ minHeight: "100vh", pb: 8 }}>
       <SiteHeader />
       <Container maxWidth="lg" sx={{ pt: { xs: 3, md: 5 } }}>
-        <CalendarGrid events={events} year={year} />
+        <CalendarGrid
+          events={events}
+          year={year}
+          initialBeerStats={beerStats}
+        />
       </Container>
       <Box
         component="footer"

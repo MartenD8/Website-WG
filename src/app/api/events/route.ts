@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
       youtubeUrl: data.youtubeUrl ?? null,
       previewImage: data.previewImage ?? null,
       isActive: data.isActive ?? true,
+      beerCounterEnabled: data.beerCounterEnabled ?? false,
     });
 
     return NextResponse.json({ event }, { status: 201 });

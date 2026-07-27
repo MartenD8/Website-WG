@@ -61,6 +61,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       youtubeUrl: data.youtubeUrl ?? null,
       previewImage: data.previewImage ?? null,
       isActive: data.isActive ?? true,
+      beerCounterEnabled: data.beerCounterEnabled ?? false,
     });
 
     if (!event) {

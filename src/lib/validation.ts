@@ -32,6 +32,21 @@ export const eventSchema = z.object({
   ),
   previewImage: optionalUrl,
   isActive: z.boolean().optional().default(true),
+  beerCounterEnabled: z.boolean().optional().default(false),
+});
+
+export const beerEntrySchema = z.object({
+  eventId: z.coerce.number().int().positive(),
+  name: z
+    .string()
+    .trim()
+    .min(1, "Name ist erforderlich")
+    .max(40, "Name darf maximal 40 Zeichen haben"),
+  beers: z.coerce
+    .number()
+    .int("Nur ganze Zahlen")
+    .min(1, "Mindestens 1 Bier")
+    .max(50, "Maximal 50 Bier pro Eintrag"),
 });
 
 export const loginSchema = z.object({
@@ -40,4 +55,5 @@ export const loginSchema = z.object({
 });
 
 export type EventFormData = z.infer<typeof eventSchema>;
+export type BeerEntryFormData = z.infer<typeof beerEntrySchema>;
 export type LoginFormData = z.infer<typeof loginSchema>;

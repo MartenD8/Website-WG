@@ -60,6 +60,7 @@ export function AdminDashboard({ initialEvents, username }: AdminDashboardProps)
         youtubeUrl: event.youtubeUrl,
         previewImage: event.previewImage,
         isActive: !event.isActive,
+        beerCounterEnabled: event.beerCounterEnabled,
       }),
     });
     const data = (await res.json()) as { event?: Event; error?: string };
@@ -74,6 +75,37 @@ export function AdminDashboard({ initialEvents, username }: AdminDashboardProps)
       data.event.isActive
         ? `„${data.event.title}" ist jetzt aktiv`
         : `„${data.event.title}" ist jetzt inaktiv`
+    );
+  }
+
+  async function toggleBeerCounter(event: Event) {
+    setError(null);
+    const res = await fetch(`/api/events/${event.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        date: event.date,
+        title: event.title,
+        description: event.description,
+        explorationLevel: event.explorationLevel,
+        youtubeUrl: event.youtubeUrl,
+        previewImage: event.previewImage,
+        isActive: event.isActive,
+        beerCounterEnabled: !event.beerCounterEnabled,
+      }),
+    });
+    const data = (await res.json()) as { event?: Event; error?: string };
+    if (!res.ok || !data.event) {
+      setError(data.error || "Bier-Zähler konnte nicht geändert werden");
+      return;
+    }
+    setEvents((prev) =>
+      prev.map((e) => (e.id === data.event!.id ? data.event! : e)).sort(byDate)
+    );
+    setMessage(
+      data.event.beerCounterEnabled
+        ? `Bier-Zähler für „${data.event.title}" aktiv`
+        : `Bier-Zähler für „${data.event.title}" deaktiviert`
     );
   }
 
@@ -164,13 +196,16 @@ export function AdminDashboard({ initialEvents, username }: AdminDashboardProps)
                   Stufe
                 </TableCell>
                 <TableCell>Aktiv</TableCell>
+                <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }}>
+                  Bier
+                </TableCell>
                 <TableCell align="right">Aktionen</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {events.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5}>
+                  <TableCell colSpan={6}>
                     <Typography color="text.secondary" py={3} textAlign="center">
                       Noch keine Events – lege das erste Event an.
                     </Typography>
@@ -224,6 +259,13 @@ export function AdminDashboard({ initialEvents, username }: AdminDashboardProps)
                       color={event.isActive ? "success" : "default"}
                       variant="outlined"
                       sx={{ ml: 0.5, display: { xs: "none", sm: "inline-flex" } }}
+                    />
+                  </TableCell>
+                  <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }}>
+                    <Switch
+                      checked={Boolean(event.beerCounterEnabled)}
+                      onChange={() => void toggleBeerCounter(event)}
+                      inputProps={{ "aria-label": "Bier-Zähler aktiv" }}
                     />
                   </TableCell>
                   <TableCell align="right">

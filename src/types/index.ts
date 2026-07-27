@@ -11,6 +11,8 @@ export interface Event {
   youtubeUrl: string | null;
   previewImage: string | null;
   isActive: boolean;
+  /** When true, visitors can submit beer counts for this day */
+  beerCounterEnabled: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -23,6 +25,22 @@ export interface EventInput {
   youtubeUrl?: string | null;
   previewImage?: string | null;
   isActive?: boolean;
+  beerCounterEnabled?: boolean;
+}
+
+export interface BeerEntry {
+  id: number;
+  eventId: number;
+  date: string;
+  name: string;
+  beers: number;
+  createdAt: string;
+}
+
+export interface BeerStats {
+  totalBeers: number;
+  topDrinker: string | null;
+  topDrinkerBeers: number;
 }
 
 export interface AdminUser {

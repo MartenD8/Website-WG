@@ -21,21 +21,31 @@ import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined
 import type { CalendarDay } from "@/lib/calendar";
 import { formatDisplayDate, youtubeThumbnail } from "@/lib/calendar";
 import { ExplorationBadge } from "@/components/ExplorationBadge";
-import type { ExplorationLevel } from "@/types";
+import { BeerCheckInForm } from "@/components/BeerCheckInForm";
+import type { BeerStats, ExplorationLevel } from "@/types";
 
 interface EventDialogProps {
   day: CalendarDay | null;
   open: boolean;
   onClose: () => void;
+  onBeerSubmitted?: (stats: BeerStats) => void;
 }
 
-export function EventDialog({ day, open, onClose }: EventDialogProps) {
+export function EventDialog({
+  day,
+  open,
+  onClose,
+  onBeerSubmitted,
+}: EventDialogProps) {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const event = day?.event;
   const hasEvent = Boolean(day?.hasEvent && event);
   const thumb =
     event?.previewImage || youtubeThumbnail(event?.youtubeUrl) || null;
+  const showBeerForm = Boolean(
+    hasEvent && event?.beerCounterEnabled && event?.id
+  );
 
   return (
     <Dialog
@@ -127,6 +137,13 @@ export function EventDialog({ day, open, onClose }: EventDialogProps) {
                 <ExplorationBadge
                   level={event.explorationLevel as ExplorationLevel}
                 />
+
+                {showBeerForm && (
+                  <BeerCheckInForm
+                    eventId={event.id}
+                    onSubmitted={onBeerSubmitted}
+                  />
+                )}
               </>
             ) : (
               <Typography color="text.secondary">

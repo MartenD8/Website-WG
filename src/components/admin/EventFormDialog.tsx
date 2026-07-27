@@ -31,6 +31,7 @@ export interface EventFormValues {
   youtubeUrl: string;
   previewImage: string;
   isActive: boolean;
+  beerCounterEnabled: boolean;
 }
 
 interface EventFormDialogProps {
@@ -50,6 +51,7 @@ function toValues(event?: Event | null): EventFormValues {
     youtubeUrl: event?.youtubeUrl ?? "",
     previewImage: event?.previewImage ?? "",
     isActive: event?.isActive ?? true,
+    beerCounterEnabled: event?.beerCounterEnabled ?? false,
   };
 }
 
@@ -90,6 +92,7 @@ export function EventFormDialog({
       youtubeUrl: values.youtubeUrl.trim() || null,
       previewImage: values.previewImage.trim() || null,
       isActive: values.isActive,
+      beerCounterEnabled: values.beerCounterEnabled,
     };
 
     try {
@@ -221,6 +224,28 @@ export function EventFormDialog({
                   Event aktiv
                   <Typography component="span" variant="body2" color="text.secondary" display="block">
                     Inaktive Events erscheinen nicht auf der öffentlichen Seite
+                  </Typography>
+                </Typography>
+              }
+            />
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={values.beerCounterEnabled}
+                  onChange={(e) =>
+                    setValues((v) => ({
+                      ...v,
+                      beerCounterEnabled: e.target.checked,
+                    }))
+                  }
+                />
+              }
+              label={
+                <Typography>
+                  Bier-Zähler aktiv
+                  <Typography component="span" variant="body2" color="text.secondary" display="block">
+                    Besucher können in der Detailansicht Name und Bieranzahl eintragen
                   </Typography>
                 </Typography>
               }

@@ -1,7 +1,13 @@
 import path from "path";
 import fs from "fs";
 import bcrypt from "bcryptjs";
-import type { Event, EventInput, ExplorationLevel } from "@/types";
+import type {
+  BeerEntry,
+  BeerStats,
+  Event,
+  EventInput,
+  ExplorationLevel,
+} from "@/types";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_PATH = path.join(DATA_DIR, "store.json");
@@ -14,8 +20,10 @@ interface Store {
     createdAt: string;
   }>;
   events: Event[];
+  beerEntries: BeerEntry[];
   nextAdminId: number;
   nextEventId: number;
+  nextBeerEntryId: number;
 }
 
 let cache: Store | null = null;
@@ -34,9 +42,39 @@ function emptyStore(): Store {
   return {
     admins: [],
     events: [],
+    beerEntries: [],
     nextAdminId: 1,
     nextEventId: 1,
+    nextBeerEntryId: 1,
   };
+}
+
+function normalizeEvent(raw: Partial<Event> & { id: number; date: string }): Event {
+  return {
+    id: raw.id,
+    date: raw.date,
+    title: raw.title ?? "",
+    description: raw.description ?? "",
+    explorationLevel: (raw.explorationLevel ?? 1) as ExplorationLevel,
+    youtubeUrl: raw.youtubeUrl ?? null,
+    previewImage: raw.previewImage ?? null,
+    isActive: raw.isActive !== false,
+    beerCounterEnabled: Boolean(raw.beerCounterEnabled),
+    createdAt: raw.createdAt ?? nowIso(),
+    updatedAt: raw.updatedAt ?? nowIso(),
+  };
+}
+
+function migrateStore(raw: Partial<Store>): Store {
+  const store: Store = {
+    admins: raw.admins ?? [],
+    events: (raw.events ?? []).map((e) => normalizeEvent(e)),
+    beerEntries: raw.beerEntries ?? [],
+    nextAdminId: raw.nextAdminId ?? 1,
+    nextEventId: raw.nextEventId ?? 1,
+    nextBeerEntryId: raw.nextBeerEntryId ?? 1,
+  };
+  return store;
 }
 
 function readStore(): Store {
@@ -50,8 +88,8 @@ function readStore(): Store {
     return cache;
   }
 
-  const raw = fs.readFileSync(DB_PATH, "utf-8");
-  cache = JSON.parse(raw) as Store;
+  const parsed = JSON.parse(fs.readFileSync(DB_PATH, "utf-8")) as Partial<Store>;
+  cache = migrateStore(parsed);
   ensureAdmin(cache);
   return cache;
 }
@@ -80,7 +118,6 @@ function ensureAdmin(store: Store): void {
   writeStore(store);
 }
 
-/** Invalidate in-memory cache (e.g. after external seed) */
 export function resetDbCache(): void {
   cache = null;
 }
@@ -117,6 +154,7 @@ export function createEvent(input: EventInput): Event {
     youtubeUrl: input.youtubeUrl ?? null,
     previewImage: input.previewImage ?? null,
     isActive: input.isActive !== false,
+    beerCounterEnabled: Boolean(input.beerCounterEnabled),
     createdAt: stamp,
     updatedAt: stamp,
   };
@@ -131,9 +169,7 @@ export function updateEvent(id: number, input: EventInput): Event | null {
   const index = store.events.findIndex((e) => e.id === id);
   if (index < 0) return null;
 
-  if (
-    store.events.some((e) => e.date === input.date && e.id !== id)
-  ) {
+  if (store.events.some((e) => e.date === input.date && e.id !== id)) {
     throw new Error("UNIQUE constraint failed: events.date");
   }
 
@@ -147,6 +183,7 @@ export function updateEvent(id: number, input: EventInput): Event | null {
     youtubeUrl: input.youtubeUrl ?? null,
     previewImage: input.previewImage ?? null,
     isActive: input.isActive !== false,
+    beerCounterEnabled: Boolean(input.beerCounterEnabled),
     updatedAt: nowIso(),
   };
 
@@ -159,9 +196,71 @@ export function deleteEvent(id: number): boolean {
   const store = readStore();
   const before = store.events.length;
   store.events = store.events.filter((e) => e.id !== id);
+  store.beerEntries = store.beerEntries.filter((b) => b.eventId !== id);
   if (store.events.length === before) return false;
   writeStore(store);
   return true;
+}
+
+export function addBeerEntry(input: {
+  eventId: number;
+  name: string;
+  beers: number;
+}): BeerEntry {
+  const store = readStore();
+  const event = store.events.find((e) => e.id === input.eventId);
+  if (!event || !event.isActive) {
+    throw new Error("EVENT_NOT_FOUND");
+  }
+  if (!event.beerCounterEnabled) {
+    throw new Error("BEER_COUNTER_DISABLED");
+  }
+
+  const entry: BeerEntry = {
+    id: store.nextBeerEntryId++,
+    eventId: event.id,
+    date: event.date,
+    name: input.name.trim(),
+    beers: input.beers,
+    createdAt: nowIso(),
+  };
+
+  store.beerEntries.push(entry);
+  writeStore(store);
+  return entry;
+}
+
+export function getBeerStats(): BeerStats {
+  const store = readStore();
+  const enabledIds = new Set(
+    store.events.filter((e) => e.beerCounterEnabled).map((e) => e.id)
+  );
+  const entries = store.beerEntries.filter((e) => enabledIds.has(e.eventId));
+
+  const totalBeers = entries.reduce((sum, e) => sum + e.beers, 0);
+
+  const byName = new Map<string, { displayName: string; beers: number }>();
+  for (const entry of entries) {
+    const key = entry.name.trim().toLowerCase();
+    if (!key) continue;
+    const existing = byName.get(key);
+    if (existing) {
+      existing.beers += entry.beers;
+    } else {
+      byName.set(key, { displayName: entry.name.trim(), beers: entry.beers });
+    }
+  }
+
+  let topDrinker: string | null = null;
+  let topDrinkerBeers = 0;
+  for (const row of byName.values()) {
+    if (row.beers > topDrinkerBeers) {
+      topDrinkerBeers = row.beers;
+      topDrinker = row.displayName;
+    }
+  }
+
+  return { totalBeers, topDrinker, topDrinkerBeers };
 }
 
 export function findAdminByUsername(username: string): {
@@ -182,10 +281,6 @@ export function verifyPassword(plain: string, hash: string): boolean {
   return bcrypt.compareSync(plain, hash);
 }
 
-/**
- * Overwrite admin credentials from env (for production recovery).
- * Call via: npm run admin:reset
- */
 export function resetAdminFromEnv(): { username: string } {
   const store = readStore();
   const username = process.env.ADMIN_USERNAME || "admin";
@@ -210,19 +305,6 @@ export function resetAdminFromEnv(): { username: string } {
 
   writeStore(store);
   return { username };
-}
-
-/** Used by seed script / tests */
-export function replaceAllEvents(events: Omit<Event, "id" | "createdAt" | "updatedAt">[]): void {
-  const store = readStore();
-  const stamp = nowIso();
-  store.events = events.map((e) => ({
-    ...e,
-    id: store.nextEventId++,
-    createdAt: stamp,
-    updatedAt: stamp,
-  }));
-  writeStore(store);
 }
 
 export function getStorePath(): string {

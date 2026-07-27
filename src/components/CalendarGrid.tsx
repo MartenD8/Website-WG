@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Box, Stack, Typography } from "@mui/material";
 import Grid from "@mui/material/Grid2";
-import type { Event } from "@/types";
+import type { BeerStats, Event } from "@/types";
 import {
   buildCalendarDays,
   getCalendarDates,
@@ -12,26 +12,32 @@ import {
 } from "@/lib/calendar";
 import { EventCard } from "@/components/EventCard";
 import { EventDialog } from "@/components/EventDialog";
+import { BeerCounterBanner } from "@/components/BeerCounterBanner";
 
 interface CalendarGridProps {
   events: Event[];
   year?: number;
+  initialBeerStats: BeerStats;
 }
 
-export function CalendarGrid({ events, year }: CalendarGridProps) {
+export function CalendarGrid({
+  events,
+  year,
+  initialBeerStats,
+}: CalendarGridProps) {
   const calendarYear = year ?? getCalendarYear();
   const days = useMemo(
-    () => buildCalendarDays(getCalendarDates(calendarYear), events, calendarYear),
+    () =>
+      buildCalendarDays(getCalendarDates(calendarYear), events, calendarYear),
     [events, calendarYear]
   );
   const [selected, setSelected] = useState<CalendarDay | null>(null);
+  const [beerStats, setBeerStats] = useState<BeerStats>(initialBeerStats);
 
   return (
     <>
       <Stack spacing={1.5} mb={3}>
-        <Typography variant="h1" component="h1">
-          Monat der offenen Tür.
-        </Typography>
+        <BeerCounterBanner stats={beerStats} />
         <Typography
           variant="body1"
           color="text.secondary"
@@ -62,6 +68,7 @@ Jeder ist jederzeit herzlich willkommen.`}
         day={selected}
         open={Boolean(selected)}
         onClose={() => setSelected(null)}
+        onBeerSubmitted={setBeerStats}
       />
     </>
   );
