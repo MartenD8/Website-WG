@@ -216,6 +216,14 @@ export function addBeerEntry(input: {
     throw new Error("BEER_COUNTER_DISABLED");
   }
 
+  const nameKey = input.name.trim().toLowerCase();
+  const alreadyEntered = store.beerEntries.some(
+    (e) => e.eventId === event.id && e.name.trim().toLowerCase() === nameKey
+  );
+  if (alreadyEntered) {
+    throw new Error("DUPLICATE_NAME");
+  }
+
   const entry: BeerEntry = {
     id: store.nextBeerEntryId++,
     eventId: event.id,

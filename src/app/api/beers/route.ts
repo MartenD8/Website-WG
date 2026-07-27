@@ -44,6 +44,15 @@ export async function POST(request: NextRequest) {
           { status: 403 }
         );
       }
+      if (error.message === "DUPLICATE_NAME") {
+        return NextResponse.json(
+          {
+            error:
+              "HALT STOP! Es bleibt alles so wie es ist, ob du ein Melker bist oder nicht.",
+          },
+          { status: 409 }
+        );
+      }
     }
     console.error("POST /api/beers", error);
     return NextResponse.json(
