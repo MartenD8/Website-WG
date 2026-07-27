@@ -8,12 +8,23 @@ import { getMaxAgeSeconds } from "@/lib/session";
 import { findAdminByUsername, verifyPassword } from "@/lib/db";
 import { loginSchema } from "@/lib/validation";
 
+/**
+ * Only mark cookies Secure when the request is actually HTTPS.
+ * Never default to Secure just because NODE_ENV=production – that
+ * breaks login on plain HTTP (browser silently drops the cookie).
+ */
 function cookieSecure(request: NextRequest): boolean {
   if (process.env.COOKIE_SECURE === "true") return true;
   if (process.env.COOKIE_SECURE === "false") return false;
-  const proto = request.headers.get("x-forwarded-proto");
-  if (proto) return proto.split(",")[0]?.trim() === "https";
-  return process.env.NODE_ENV === "production";
+  const forwarded = request.headers.get("x-forwarded-proto");
+  if (forwarded) {
+    return forwarded.split(",")[0]?.trim().toLowerCase() === "https";
+  }
+  try {
+    return new URL(request.url).protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
 function applySessionCookie(

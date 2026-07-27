@@ -4,9 +4,15 @@ import { SESSION_COOKIE } from "@/lib/session";
 function cookieSecure(request: NextRequest): boolean {
   if (process.env.COOKIE_SECURE === "true") return true;
   if (process.env.COOKIE_SECURE === "false") return false;
-  const proto = request.headers.get("x-forwarded-proto");
-  if (proto) return proto.split(",")[0]?.trim() === "https";
-  return process.env.NODE_ENV === "production";
+  const forwarded = request.headers.get("x-forwarded-proto");
+  if (forwarded) {
+    return forwarded.split(",")[0]?.trim().toLowerCase() === "https";
+  }
+  try {
+    return new URL(request.url).protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
 /** POST /api/auth/logout */
