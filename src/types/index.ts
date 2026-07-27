@@ -48,6 +48,10 @@ export interface ApiError {
 export const CALENDAR_START = { month: 9, day: 26 } as const;
 export const CALENDAR_END = { month: 10, day: 18 } as const;
 
+/** Extra tile after the last day: 19 Oct – 29 Oct (stored as start date) */
+export const CALENDAR_FINALE_START = { month: 10, day: 19 } as const;
+export const CALENDAR_FINALE_END = { month: 10, day: 29 } as const;
+
 export const EXPLORATION_LABELS: Record<ExplorationLevel, string> = {
   1: "Level 1 – Gemütlich",
   2: "Level 2 – Ausgelassen",

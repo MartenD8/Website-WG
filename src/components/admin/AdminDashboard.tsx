@@ -24,7 +24,7 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import type { Event } from "@/types";
-import { formatDisplayDate } from "@/lib/calendar";
+import { formatDisplayDate, isFinaleRangeDate } from "@/lib/calendar";
 import { ExplorationBadge } from "@/components/ExplorationBadge";
 import { EventFormDialog } from "@/components/admin/EventFormDialog";
 
@@ -181,7 +181,9 @@ export function AdminDashboard({ initialEvents, username }: AdminDashboardProps)
                 <TableRow key={event.id} hover>
                   <TableCell sx={{ whiteSpace: "nowrap" }}>
                     <Typography variant="body2" fontWeight={600}>
-                      {event.date}
+                      {isFinaleRangeDate(event.date)
+                        ? "19.10. – 29.10."
+                        : event.date}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       {formatDisplayDate(event.date)}

@@ -122,6 +122,16 @@ const samples: SeedEvent[] = [
     previewImage: null,
     isActive: true,
   },
+  {
+    date: `${YEAR}-10-19`,
+    title: "Abschluss-Zeitraum",
+    description:
+      "Vom 19. bis 29. Oktober – der besondere Abschlusszeitraum mit weiteren Highlights der WG.",
+    explorationLevel: 5,
+    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    previewImage: null,
+    isActive: true,
+  },
 ];
 
 interface Store {

@@ -21,7 +21,7 @@ interface CalendarGridProps {
 export function CalendarGrid({ events, year }: CalendarGridProps) {
   const calendarYear = year ?? getCalendarYear();
   const days = useMemo(
-    () => buildCalendarDays(getCalendarDates(calendarYear), events),
+    () => buildCalendarDays(getCalendarDates(calendarYear), events, calendarYear),
     [events, calendarYear]
   );
   const [selected, setSelected] = useState<CalendarDay | null>(null);

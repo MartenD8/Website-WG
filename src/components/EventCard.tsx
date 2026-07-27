@@ -28,10 +28,14 @@ interface EventCardProps {
 
 export function EventCard({ day, onClick, index }: EventCardProps) {
   const theme = useTheme();
-  const { date, event, hasEvent } = day;
+  const { date, event, hasEvent, isRange } = day;
   const preview =
     event?.description?.trim().slice(0, 90) ||
-    (hasEvent ? "Mehr erfahren …" : "Kein Event an diesem Tag");
+    (hasEvent
+      ? "Mehr erfahren …"
+      : isRange
+        ? "Kein Event in diesem Zeitraum"
+        : "Kein Event an diesem Tag");
 
   return (
     <Card
@@ -86,7 +90,15 @@ export function EventCard({ day, onClick, index }: EventCardProps) {
               >
                 {formatWeekday(date)}
               </Typography>
-              <Typography variant="h3" component="p" sx={{ lineHeight: 1, mt: 0.25 }}>
+              <Typography
+                variant="h3"
+                component="p"
+                sx={{
+                  lineHeight: 1,
+                  mt: 0.25,
+                  fontSize: isRange ? "1.5rem" : undefined,
+                }}
+              >
                 {formatDayNumber(date)}
               </Typography>
               <Typography variant="body2" color="text.secondary" fontWeight={600}>

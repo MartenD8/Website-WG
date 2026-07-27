@@ -21,7 +21,7 @@ import {
 } from "@mui/material";
 import type { Event, ExplorationLevel } from "@/types";
 import { EXPLORATION_LABELS } from "@/types";
-import { getCalendarDates, getCalendarYear } from "@/lib/calendar";
+import { getSelectableCalendarDates, getCalendarYear, formatDateOptionLabel } from "@/lib/calendar";
 
 export interface EventFormValues {
   date: string;
@@ -72,7 +72,7 @@ export function EventFormDialog({
     }
   }, [open, initial]);
 
-  const calendarDates = getCalendarDates(getCalendarYear());
+  const calendarDates = getSelectableCalendarDates(getCalendarYear());
   const dateOptions = calendarDates.filter(
     (d) => d === values.date || !existingDates.includes(d)
   );
@@ -137,7 +137,7 @@ export function EventFormDialog({
               >
                 {dateOptions.map((d) => (
                   <MenuItem key={d} value={d}>
-                    {d}
+                    {formatDateOptionLabel(d)}
                   </MenuItem>
                 ))}
               </Select>
