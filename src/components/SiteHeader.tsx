@@ -23,7 +23,7 @@ interface SiteHeaderProps {
 }
 
 export function SiteHeader({
-  title = "Event Kalender",
+  title = "Monat der offenen Tür",
   showAdminLink = true,
 }: SiteHeaderProps) {
   const { mode, toggleMode } = useColorMode();

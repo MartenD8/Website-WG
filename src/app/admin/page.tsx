@@ -21,7 +21,7 @@ export default async function AdminPage() {
 
   return (
     <Box sx={{ minHeight: "100vh", pb: 6 }}>
-      <SiteHeader showAdminLink={false} title="Event Kalender · Admin" />
+      <SiteHeader showAdminLink={false} title="Monat der offenen Tür · Admin" />
       <Container maxWidth="lg" sx={{ pt: { xs: 3, md: 4 } }}>
         <AdminDashboard initialEvents={events} username={session.username} />
       </Container>

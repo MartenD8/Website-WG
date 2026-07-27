@@ -14,15 +14,15 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Event Kalender",
-    template: "%s | Event Kalender",
+    default: "Monat der offenen Tür",
+    template: "%s | Monat der offenen Tür",
   },
   description:
-    "Entdecke den Event-Kalender vom 25. September bis 18. Oktober – mit YouTube-Videos und Explorationsstufen.",
+    "Die einmalige WG-Verabschiedung – vom 26.09.26 bis zum 18.10.26 erwarten euch zahlreiche Events.",
   openGraph: {
-    title: "Event Kalender",
+    title: "Monat der offenen Tür",
     description:
-      "Moderne Präsentationsplattform für Events mit YouTube-Weiterleitung.",
+      "Die einmalige WG-Verabschiedung – zahlreiche Events, jeder ist jederzeit herzlich willkommen.",
     type: "website",
     locale: "de_DE",
   },

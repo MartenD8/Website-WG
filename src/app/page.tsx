@@ -27,7 +27,7 @@ export default function HomePage() {
         }}
       >
         <Typography variant="body2" color="text.secondary">
-          Event Kalender · {year} · Präsentationsplattform
+          Monat der offenen Tür · {year}
         </Typography>
       </Box>
     </Box>

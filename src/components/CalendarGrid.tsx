@@ -28,13 +28,19 @@ export function CalendarGrid({ events, year }: CalendarGridProps) {
 
   return (
     <>
-      <Stack spacing={1} mb={3}>
+      <Stack spacing={1.5} mb={3}>
         <Typography variant="h1" component="h1">
-          Event-Kalender
+          Monat der offenen Tür.
         </Typography>
-        <Typography variant="body1" color="text.secondary" maxWidth={560}>
-          Vom 25. September bis 18. Oktober {calendarYear} – entdecke täglich
-          ein Event und öffne das zugehörige YouTube-Video.
+        <Typography
+          variant="body1"
+          color="text.secondary"
+          maxWidth={640}
+          sx={{ whiteSpace: "pre-line" }}
+        >
+          {`Die einmalige WG-Verabschiedung
+Vom 26.09.26 bis zum 18.10.26 erwarten euch zahlreiche Events um nochmal alle legendären Momente der Wg zu erleben.
+Jeder ist jederzeit herzlich willkommen.`}
         </Typography>
       </Stack>
 

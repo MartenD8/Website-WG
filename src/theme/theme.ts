@@ -215,6 +215,6 @@ export const LEVEL_COLORS: Record<
   1: { light: "#146C2E", dark: "#81C995" },
   2: { light: "#1B5EAA", dark: "#A8C7FA" },
   3: { light: "#7B5800", dark: "#FDD663" },
-  4: { light: "#9C4048", dark: "#FFB2B6" },
-  5: { light: "#6B4EA2", dark: "#E0B6FF" },
+  4: { light: "#E65100", dark: "#FFB74D" },
+  5: { light: "#C62828", dark: "#EF5350" },
 };

@@ -43,7 +43,7 @@ interface SeedEvent {
 
 const samples: SeedEvent[] = [
   {
-    date: `${YEAR}-09-25`,
+    date: `${YEAR}-09-26`,
     title: "Kick-off: Willkommen im Kalender",
     description:
       "Der Startschuss für die Event-Reihe. Wir stellen das Format vor, erklären die Explorationsstufen und zeigen, wie du die täglichen Videos optimal nutzt.",
