@@ -49,6 +49,42 @@ export const beerEntrySchema = z.object({
     .max(50, "Maximal 50 Bier pro Eintrag"),
 });
 
+export const beerEntryUpdateSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, "Name ist erforderlich")
+    .max(40, "Name darf maximal 40 Zeichen haben")
+    .optional(),
+  beers: z.coerce
+    .number()
+    .int("Nur ganze Zahlen")
+    .min(1, "Mindestens 1 Bier")
+    .max(50, "Maximal 50 Bier pro Eintrag")
+    .optional(),
+});
+
+export const quizSubmitSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, "Name ist erforderlich")
+    .max(40, "Name darf maximal 40 Zeichen haben"),
+  answers: z.record(
+    z.string(),
+    z.union([z.string(), z.record(z.string(), z.string())])
+  ),
+});
+
+export const awardSubmitSchema = z.object({
+  voterName: z
+    .string()
+    .trim()
+    .min(1, "Name ist erforderlich")
+    .max(40, "Name darf maximal 40 Zeichen haben"),
+  nominations: z.record(z.string(), z.string()),
+});
+
 export const loginSchema = z.object({
   username: z.string().trim().min(1, "Benutzername ist erforderlich").max(100),
   password: z.string().min(1, "Passwort ist erforderlich").max(200),

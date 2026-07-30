@@ -43,6 +43,43 @@ export interface BeerStats {
   topDrinkerBeers: number;
 }
 
+export interface BeerPersonOverview {
+  name: string;
+  totalBeers: number;
+  entries: Array<{
+    id: number;
+    eventId: number;
+    eventTitle: string;
+    date: string;
+    name: string;
+    beers: number;
+    createdAt: string;
+  }>;
+}
+
+export interface QuizSubmission {
+  id: number;
+  name: string;
+  answers: Record<string, string | Record<string, string>>;
+  correctCount: number;
+  totalQuestions: number;
+  createdAt: string;
+}
+
+export interface AwardBallot {
+  id: number;
+  voterName: string;
+  /** awardId → nominated person name */
+  nominations: Record<string, string>;
+  createdAt: string;
+}
+
+export interface AwardResult {
+  awardId: string;
+  awardTitle: string;
+  top: Array<{ name: string; votes: number }>;
+}
+
 export interface AdminUser {
   id: number;
   username: string;

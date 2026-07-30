@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Box, Stack, Typography } from "@mui/material";
+import { Box, Button, Stack, Typography } from "@mui/material";
 import Grid from "@mui/material/Grid2";
+import QuizOutlinedIcon from "@mui/icons-material/QuizOutlined";
+import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
 import type { BeerStats, Event } from "@/types";
 import {
   buildCalendarDays,
@@ -13,6 +15,8 @@ import {
 import { EventCard } from "@/components/EventCard";
 import { EventDialog } from "@/components/EventDialog";
 import { BeerCounterBanner } from "@/components/BeerCounterBanner";
+import { QuizDialog } from "@/components/QuizDialog";
+import { AwardsDialog } from "@/components/AwardsDialog";
 
 interface CalendarGridProps {
   events: Event[];
@@ -33,6 +37,8 @@ export function CalendarGrid({
   );
   const [selected, setSelected] = useState<CalendarDay | null>(null);
   const [beerStats, setBeerStats] = useState<BeerStats>(initialBeerStats);
+  const [quizOpen, setQuizOpen] = useState(false);
+  const [awardsOpen, setAwardsOpen] = useState(false);
 
   return (
     <>
@@ -48,6 +54,23 @@ export function CalendarGrid({
 Vom 26.09.26 bis zum 18.10.26 erwarten euch zahlreiche Events um nochmal alle legendären Momente der Wg zu erleben.
 Jeder ist jederzeit herzlich willkommen.`}
         </Typography>
+
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} pt={0.5}>
+          <Button
+            variant="contained"
+            startIcon={<QuizOutlinedIcon />}
+            onClick={() => setQuizOpen(true)}
+          >
+            Das große WG-Quiz
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<EmojiEventsOutlinedIcon />}
+            onClick={() => setAwardsOpen(true)}
+          >
+            Awards
+          </Button>
+        </Stack>
       </Stack>
 
       <Grid container spacing={2}>
@@ -70,6 +93,8 @@ Jeder ist jederzeit herzlich willkommen.`}
         onClose={() => setSelected(null)}
         onBeerSubmitted={setBeerStats}
       />
+      <QuizDialog open={quizOpen} onClose={() => setQuizOpen(false)} />
+      <AwardsDialog open={awardsOpen} onClose={() => setAwardsOpen(false)} />
     </>
   );
 }

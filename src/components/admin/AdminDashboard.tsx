@@ -27,6 +27,9 @@ import type { Event } from "@/types";
 import { formatDisplayDate, isFinaleRangeDate } from "@/lib/calendar";
 import { ExplorationBadge } from "@/components/ExplorationBadge";
 import { EventFormDialog } from "@/components/admin/EventFormDialog";
+import { AdminBeerOverview } from "@/components/admin/AdminBeerOverview";
+import { AdminQuizOverview } from "@/components/admin/AdminQuizOverview";
+import { AdminAwardsOverview } from "@/components/admin/AdminAwardsOverview";
 
 interface AdminDashboardProps {
   initialEvents: Event[];
@@ -320,6 +323,10 @@ export function AdminDashboard({ initialEvents, username }: AdminDashboardProps)
         }}
         onSaved={handleSaved}
       />
+
+      <AdminBeerOverview />
+      <AdminQuizOverview />
+      <AdminAwardsOverview />
     </Stack>
   );
 }

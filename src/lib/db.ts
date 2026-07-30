@@ -2,12 +2,18 @@ import path from "path";
 import fs from "fs";
 import bcrypt from "bcryptjs";
 import type {
+  AwardBallot,
+  AwardResult,
   BeerEntry,
+  BeerPersonOverview,
   BeerStats,
   Event,
   EventInput,
   ExplorationLevel,
+  QuizSubmission,
 } from "@/types";
+import { AWARDS } from "@/data/awards";
+import { QUIZ_QUESTIONS, scoreQuizAnswers } from "@/data/quiz";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_PATH = path.join(DATA_DIR, "store.json");
@@ -21,9 +27,13 @@ interface Store {
   }>;
   events: Event[];
   beerEntries: BeerEntry[];
+  quizSubmissions: QuizSubmission[];
+  awardBallots: AwardBallot[];
   nextAdminId: number;
   nextEventId: number;
   nextBeerEntryId: number;
+  nextQuizSubmissionId: number;
+  nextAwardBallotId: number;
 }
 
 let cache: Store | null = null;
@@ -43,9 +53,13 @@ function emptyStore(): Store {
     admins: [],
     events: [],
     beerEntries: [],
+    quizSubmissions: [],
+    awardBallots: [],
     nextAdminId: 1,
     nextEventId: 1,
     nextBeerEntryId: 1,
+    nextQuizSubmissionId: 1,
+    nextAwardBallotId: 1,
   };
 }
 
@@ -70,9 +84,13 @@ function migrateStore(raw: Partial<Store>): Store {
     admins: raw.admins ?? [],
     events: (raw.events ?? []).map((e) => normalizeEvent(e)),
     beerEntries: raw.beerEntries ?? [],
+    quizSubmissions: raw.quizSubmissions ?? [],
+    awardBallots: raw.awardBallots ?? [],
     nextAdminId: raw.nextAdminId ?? 1,
     nextEventId: raw.nextEventId ?? 1,
     nextBeerEntryId: raw.nextBeerEntryId ?? 1,
+    nextQuizSubmissionId: raw.nextQuizSubmissionId ?? 1,
+    nextAwardBallotId: raw.nextAwardBallotId ?? 1,
   };
   return store;
 }
@@ -269,6 +287,179 @@ export function getBeerStats(): BeerStats {
   }
 
   return { totalBeers, topDrinker, topDrinkerBeers };
+}
+
+export function getBeerPersonOverview(): BeerPersonOverview[] {
+  const store = readStore();
+  const eventById = new Map(store.events.map((e) => [e.id, e]));
+  const byName = new Map<string, BeerPersonOverview>();
+
+  for (const entry of store.beerEntries) {
+    const key = entry.name.trim().toLowerCase();
+    if (!key) continue;
+    const event = eventById.get(entry.eventId);
+    const row = byName.get(key) ?? {
+      name: entry.name.trim(),
+      totalBeers: 0,
+      entries: [],
+    };
+    row.totalBeers += entry.beers;
+    row.entries.push({
+      id: entry.id,
+      eventId: entry.eventId,
+      eventTitle: event?.title || `Event #${entry.eventId}`,
+      date: entry.date,
+      name: entry.name.trim(),
+      beers: entry.beers,
+      createdAt: entry.createdAt,
+    });
+    byName.set(key, row);
+  }
+
+  return [...byName.values()]
+    .map((p) => ({
+      ...p,
+      entries: p.entries.sort((a, b) => a.date.localeCompare(b.date)),
+    }))
+    .sort((a, b) => b.totalBeers - a.totalBeers || a.name.localeCompare(b.name));
+}
+
+export function updateBeerEntry(
+  id: number,
+  input: { name?: string; beers?: number }
+): BeerEntry | null {
+  const store = readStore();
+  const index = store.beerEntries.findIndex((e) => e.id === id);
+  if (index < 0) return null;
+
+  const existing = store.beerEntries[index];
+  const nextName = input.name?.trim() ?? existing.name;
+  const nextBeers = input.beers ?? existing.beers;
+
+  if (!nextName) throw new Error("INVALID_NAME");
+  if (!Number.isInteger(nextBeers) || nextBeers < 1 || nextBeers > 50) {
+    throw new Error("INVALID_BEERS");
+  }
+
+  const nameKey = nextName.toLowerCase();
+  const duplicate = store.beerEntries.some(
+    (e) =>
+      e.id !== id &&
+      e.eventId === existing.eventId &&
+      e.name.trim().toLowerCase() === nameKey
+  );
+  if (duplicate) throw new Error("DUPLICATE_NAME");
+
+  const updated: BeerEntry = {
+    ...existing,
+    name: nextName,
+    beers: nextBeers,
+  };
+  store.beerEntries[index] = updated;
+  writeStore(store);
+  return updated;
+}
+
+export function deleteBeerEntry(id: number): boolean {
+  const store = readStore();
+  const before = store.beerEntries.length;
+  store.beerEntries = store.beerEntries.filter((e) => e.id !== id);
+  if (store.beerEntries.length === before) return false;
+  writeStore(store);
+  return true;
+}
+
+export function submitQuiz(input: {
+  name: string;
+  answers: Record<string, string | Record<string, string>>;
+}): QuizSubmission {
+  const store = readStore();
+  const name = input.name.trim();
+  if (!name) throw new Error("INVALID_NAME");
+
+  const nameKey = name.toLowerCase();
+  if (
+    store.quizSubmissions.some((s) => s.name.trim().toLowerCase() === nameKey)
+  ) {
+    throw new Error("DUPLICATE_NAME");
+  }
+
+  const { correctCount } = scoreQuizAnswers(input.answers);
+  const submission: QuizSubmission = {
+    id: store.nextQuizSubmissionId++,
+    name,
+    answers: input.answers,
+    correctCount,
+    totalQuestions: QUIZ_QUESTIONS.length,
+    createdAt: nowIso(),
+  };
+  store.quizSubmissions.push(submission);
+  writeStore(store);
+  return submission;
+}
+
+export function getQuizSubmissions(): QuizSubmission[] {
+  return [...readStore().quizSubmissions].sort(
+    (a, b) =>
+      b.correctCount - a.correctCount || a.name.localeCompare(b.name)
+  );
+}
+
+export function submitAwardBallot(input: {
+  voterName: string;
+  nominations: Record<string, string>;
+}): AwardBallot {
+  const store = readStore();
+  const voterName = input.voterName.trim();
+  if (!voterName) throw new Error("INVALID_NAME");
+
+  const nameKey = voterName.toLowerCase();
+  if (
+    store.awardBallots.some((b) => b.voterName.trim().toLowerCase() === nameKey)
+  ) {
+    throw new Error("DUPLICATE_NAME");
+  }
+
+  const validIds = new Set(AWARDS.map((a) => a.id));
+  const nominations: Record<string, string> = {};
+  for (const [awardId, person] of Object.entries(input.nominations)) {
+    if (!validIds.has(awardId)) continue;
+    const trimmed = person.trim();
+    if (trimmed) nominations[awardId] = trimmed;
+  }
+
+  if (Object.keys(nominations).length === 0) {
+    throw new Error("EMPTY_NOMINATIONS");
+  }
+
+  const ballot: AwardBallot = {
+    id: store.nextAwardBallotId++,
+    voterName,
+    nominations,
+    createdAt: nowIso(),
+  };
+  store.awardBallots.push(ballot);
+  writeStore(store);
+  return ballot;
+}
+
+export function getAwardResults(): AwardResult[] {
+  const store = readStore();
+  return AWARDS.map((award) => {
+    const counts = new Map<string, { name: string; votes: number }>();
+    for (const ballot of store.awardBallots) {
+      const nominee = ballot.nominations[award.id]?.trim();
+      if (!nominee) continue;
+      const key = nominee.toLowerCase();
+      const existing = counts.get(key);
+      if (existing) existing.votes += 1;
+      else counts.set(key, { name: nominee, votes: 1 });
+    }
+    const top = [...counts.values()]
+      .sort((a, b) => b.votes - a.votes || a.name.localeCompare(b.name))
+      .slice(0, 3);
+    return { awardId: award.id, awardTitle: award.title, top };
+  });
 }
 
 export function findAdminByUsername(username: string): {
