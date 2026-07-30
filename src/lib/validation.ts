@@ -85,6 +85,28 @@ export const awardSubmitSchema = z.object({
   nominations: z.record(z.string(), z.string()),
 });
 
+export const quizUpdateSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, "Name ist erforderlich")
+    .max(40, "Name darf maximal 40 Zeichen haben")
+    .optional(),
+  answers: z
+    .record(z.string(), z.union([z.string(), z.record(z.string(), z.string())]))
+    .optional(),
+  recalculate: z.boolean().optional(),
+});
+
+export const rsvpSchema = z.object({
+  eventId: z.coerce.number().int().positive(),
+  name: z
+    .string()
+    .trim()
+    .min(1, "Name ist erforderlich")
+    .max(40, "Name darf maximal 40 Zeichen haben"),
+});
+
 export const loginSchema = z.object({
   username: z.string().trim().min(1, "Benutzername ist erforderlich").max(100),
   password: z.string().min(1, "Passwort ist erforderlich").max(200),

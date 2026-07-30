@@ -8,7 +8,9 @@ import type {
   BeerPersonOverview,
   BeerStats,
   Event,
+  EventGuestList,
   EventInput,
+  EventRsvp,
   ExplorationLevel,
   QuizSubmission,
 } from "@/types";
@@ -29,11 +31,13 @@ interface Store {
   beerEntries: BeerEntry[];
   quizSubmissions: QuizSubmission[];
   awardBallots: AwardBallot[];
+  eventRsvps: EventRsvp[];
   nextAdminId: number;
   nextEventId: number;
   nextBeerEntryId: number;
   nextQuizSubmissionId: number;
   nextAwardBallotId: number;
+  nextEventRsvpId: number;
 }
 
 let cache: Store | null = null;
@@ -55,11 +59,13 @@ function emptyStore(): Store {
     beerEntries: [],
     quizSubmissions: [],
     awardBallots: [],
+    eventRsvps: [],
     nextAdminId: 1,
     nextEventId: 1,
     nextBeerEntryId: 1,
     nextQuizSubmissionId: 1,
     nextAwardBallotId: 1,
+    nextEventRsvpId: 1,
   };
 }
 
@@ -86,11 +92,13 @@ function migrateStore(raw: Partial<Store>): Store {
     beerEntries: raw.beerEntries ?? [],
     quizSubmissions: raw.quizSubmissions ?? [],
     awardBallots: raw.awardBallots ?? [],
+    eventRsvps: raw.eventRsvps ?? [],
     nextAdminId: raw.nextAdminId ?? 1,
     nextEventId: raw.nextEventId ?? 1,
     nextBeerEntryId: raw.nextBeerEntryId ?? 1,
     nextQuizSubmissionId: raw.nextQuizSubmissionId ?? 1,
     nextAwardBallotId: raw.nextAwardBallotId ?? 1,
+    nextEventRsvpId: raw.nextEventRsvpId ?? 1,
   };
   return store;
 }
@@ -215,6 +223,7 @@ export function deleteEvent(id: number): boolean {
   const before = store.events.length;
   store.events = store.events.filter((e) => e.id !== id);
   store.beerEntries = store.beerEntries.filter((b) => b.eventId !== id);
+  store.eventRsvps = store.eventRsvps.filter((r) => r.eventId !== id);
   if (store.events.length === before) return false;
   writeStore(store);
   return true;
@@ -403,6 +412,112 @@ export function getQuizSubmissions(): QuizSubmission[] {
     (a, b) =>
       b.correctCount - a.correctCount || a.name.localeCompare(b.name)
   );
+}
+
+export function updateQuizSubmission(
+  id: number,
+  input: {
+    name?: string;
+    answers?: Record<string, string | Record<string, string>>;
+  }
+): QuizSubmission | null {
+  const store = readStore();
+  const index = store.quizSubmissions.findIndex((s) => s.id === id);
+  if (index < 0) return null;
+
+  const existing = store.quizSubmissions[index];
+  const nextName = input.name?.trim() ?? existing.name;
+  if (!nextName) throw new Error("INVALID_NAME");
+
+  const nameKey = nextName.toLowerCase();
+  const duplicate = store.quizSubmissions.some(
+    (s) => s.id !== id && s.name.trim().toLowerCase() === nameKey
+  );
+  if (duplicate) throw new Error("DUPLICATE_NAME");
+
+  const answers = input.answers ?? existing.answers;
+  const { correctCount } = scoreQuizAnswers(answers);
+
+  const updated: QuizSubmission = {
+    ...existing,
+    name: nextName,
+    answers,
+    correctCount,
+    totalQuestions: QUIZ_QUESTIONS.length,
+  };
+  store.quizSubmissions[index] = updated;
+  writeStore(store);
+  return updated;
+}
+
+export function deleteQuizSubmission(id: number): boolean {
+  const store = readStore();
+  const before = store.quizSubmissions.length;
+  store.quizSubmissions = store.quizSubmissions.filter((s) => s.id !== id);
+  if (store.quizSubmissions.length === before) return false;
+  writeStore(store);
+  return true;
+}
+
+export function addEventRsvp(input: {
+  eventId: number;
+  name: string;
+}): EventRsvp {
+  const store = readStore();
+  const event = store.events.find((e) => e.id === input.eventId);
+  if (!event || !event.isActive) throw new Error("EVENT_NOT_FOUND");
+
+  const name = input.name.trim();
+  if (!name) throw new Error("INVALID_NAME");
+
+  const nameKey = name.toLowerCase();
+  const duplicate = store.eventRsvps.some(
+    (r) => r.eventId === event.id && r.name.trim().toLowerCase() === nameKey
+  );
+  if (duplicate) throw new Error("DUPLICATE_RSVP");
+
+  const rsvp: EventRsvp = {
+    id: store.nextEventRsvpId++,
+    eventId: event.id,
+    date: event.date,
+    name,
+    createdAt: nowIso(),
+  };
+  store.eventRsvps.push(rsvp);
+  writeStore(store);
+  return rsvp;
+}
+
+export function getEventGuestLists(
+  sort: "newest" | "oldest" = "newest"
+): EventGuestList[] {
+  const store = readStore();
+  const events = [...store.events].sort((a, b) => a.date.localeCompare(b.date));
+
+  return events.map((event) => {
+    const guests = store.eventRsvps
+      .filter((r) => r.eventId === event.id)
+      .sort((a, b) =>
+        sort === "newest"
+          ? b.createdAt.localeCompare(a.createdAt)
+          : a.createdAt.localeCompare(b.createdAt)
+      );
+    return {
+      eventId: event.id,
+      eventTitle: event.title,
+      date: event.date,
+      guests,
+    };
+  });
+}
+
+export function deleteEventRsvp(id: number): boolean {
+  const store = readStore();
+  const before = store.eventRsvps.length;
+  store.eventRsvps = store.eventRsvps.filter((r) => r.id !== id);
+  if (store.eventRsvps.length === before) return false;
+  writeStore(store);
+  return true;
 }
 
 export function submitAwardBallot(input: {

@@ -20,6 +20,7 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import type { PublicQuizQuestion } from "@/data/quiz";
+import { QuizResultModal } from "@/components/QuizResultModal";
 
 interface QuizDialogProps {
   open: boolean;
@@ -40,6 +41,7 @@ export function QuizDialog({ open, onClose }: QuizDialogProps) {
     correctCount: number;
     totalQuestions: number;
   } | null>(null);
+  const [resultOpen, setResultOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -49,6 +51,7 @@ export function QuizDialog({ open, onClose }: QuizDialogProps) {
     setAnswers({});
     setError(null);
     setResult(null);
+    setResultOpen(false);
     void fetch("/api/quiz")
       .then((r) => r.json())
       .then((data: { questions?: PublicQuizQuestion[] }) => {
@@ -90,6 +93,7 @@ export function QuizDialog({ open, onClose }: QuizDialogProps) {
         totalQuestions: data.submission.totalQuestions,
       });
       setStep("done");
+      setResultOpen(true);
     } catch {
       setError("Netzwerkfehler");
     } finally {
@@ -97,149 +101,167 @@ export function QuizDialog({ open, onClose }: QuizDialogProps) {
     }
   }
 
+  function handleCloseAll() {
+    setResultOpen(false);
+    onClose();
+  }
+
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" scroll="body">
-      <DialogTitle sx={{ pr: 6 }}>
-        Das große WG-Quiz
-        <IconButton
-          aria-label="Schließen"
-          onClick={onClose}
-          sx={{ position: "absolute", right: 12, top: 12 }}
-        >
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent>
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
+    <>
+      <Dialog
+        open={open && !resultOpen}
+        onClose={onClose}
+        fullWidth
+        maxWidth="sm"
+        scroll="body"
+      >
+        <DialogTitle sx={{ pr: 6 }}>
+          Das große WG-Quiz
+          <IconButton
+            aria-label="Schließen"
+            onClick={onClose}
+            sx={{ position: "absolute", right: 12, top: 12 }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
 
-        {step === "name" && (
-          <Box component="form" onSubmit={startQuiz}>
-            <Stack spacing={2} sx={{ pt: 1 }}>
-              <Typography color="text.secondary">
-                Gib zuerst deinen Namen ein – analog zum Bier-Check-in.
-              </Typography>
-              <TextField
-                label="Dein Name"
-                required
-                fullWidth
-                autoFocus
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                inputProps={{ maxLength: 40 }}
-              />
-              <Button type="submit" variant="contained">
-                Quiz starten
-              </Button>
-            </Stack>
-          </Box>
-        )}
+          {step === "name" && (
+            <Box component="form" onSubmit={startQuiz}>
+              <Stack spacing={2} sx={{ pt: 1 }}>
+                <Typography color="text.secondary">
+                  Gib zuerst deinen Namen ein – analog zum Bier-Check-in.
+                </Typography>
+                <TextField
+                  label="Dein Name"
+                  required
+                  fullWidth
+                  autoFocus
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  inputProps={{ maxLength: 40 }}
+                />
+                <Button type="submit" variant="contained">
+                  Quiz starten
+                </Button>
+              </Stack>
+            </Box>
+          )}
 
-        {step === "quiz" && (
-          <Box component="form" onSubmit={submitQuiz}>
-            <Stack spacing={3} sx={{ pt: 1 }}>
-              <Typography variant="body2" color="text.secondary">
-                Teilnehmer: <strong>{name}</strong>
-              </Typography>
-              {questions.map((q) => (
-                <Box
-                  key={q.id}
-                  sx={{ p: 2, borderRadius: 3, bgcolor: "action.hover" }}
-                >
-                  <Typography fontWeight={700} mb={1.5}>
-                    {q.id}. {q.question}
-                  </Typography>
-                  {q.type === "single" ? (
-                    <FormControl>
-                      <RadioGroup
-                        value={(answers[String(q.id)] as string) || ""}
-                        onChange={(e) =>
-                          setAnswers((prev) => ({
-                            ...prev,
-                            [String(q.id)]: e.target.value,
-                          }))
-                        }
-                      >
-                        {(["A", "B", "C", "D"] as const).map((key) => (
-                          <FormControlLabel
-                            key={key}
-                            value={key}
-                            control={<Radio />}
-                            label={`${key}: ${q.options[key]}`}
-                          />
-                        ))}
-                      </RadioGroup>
-                    </FormControl>
-                  ) : (
-                    <Stack spacing={1.5}>
-                      <Typography variant="body2" color="text.secondary">
-                        {q.hint}
-                      </Typography>
-                      <Typography variant="body2">
-                        Optionen:{" "}
-                        {(["A", "B", "C", "D"] as const)
-                          .map((k) => `${k}=${q.matchingOptions[k]}`)
-                          .join(" · ")}
-                      </Typography>
-                      {q.matchingItems.map((item) => (
-                        <TextField
-                          key={item.id}
-                          label={`${item.label} (A–D)`}
-                          size="small"
-                          value={
-                            (
-                              (answers[String(q.id)] as
-                                | Record<string, string>
-                                | undefined) ?? {}
-                            )[item.id] ?? ""
-                          }
+          {step === "quiz" && (
+            <Box component="form" onSubmit={submitQuiz}>
+              <Stack spacing={3} sx={{ pt: 1 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Teilnehmer: <strong>{name}</strong>
+                </Typography>
+                {questions.map((q) => (
+                  <Box
+                    key={q.id}
+                    sx={{ p: 2, borderRadius: 3, bgcolor: "action.hover" }}
+                  >
+                    <Typography fontWeight={700} mb={1.5}>
+                      {q.id}. {q.question}
+                    </Typography>
+                    {q.type === "single" ? (
+                      <FormControl>
+                        <RadioGroup
+                          value={(answers[String(q.id)] as string) || ""}
                           onChange={(e) =>
                             setAnswers((prev) => ({
                               ...prev,
-                              [String(q.id)]: {
-                                ...((prev[String(q.id)] as
-                                  | Record<string, string>
-                                  | undefined) ?? {}),
-                                [item.id]: e.target.value
-                                  .trim()
-                                  .toUpperCase()
-                                  .slice(0, 1),
-                              },
+                              [String(q.id)]: e.target.value,
                             }))
                           }
-                          inputProps={{ maxLength: 1 }}
-                        />
-                      ))}
-                    </Stack>
-                  )}
-                </Box>
-              ))}
-              <Button type="submit" variant="contained" disabled={loading}>
-                {loading ? "Speichern…" : "Quiz absenden"}
-              </Button>
-            </Stack>
-          </Box>
-        )}
+                        >
+                          {(["A", "B", "C", "D"] as const).map((key) => (
+                            <FormControlLabel
+                              key={key}
+                              value={key}
+                              control={<Radio />}
+                              label={`${key}: ${q.options[key]}`}
+                            />
+                          ))}
+                        </RadioGroup>
+                      </FormControl>
+                    ) : (
+                      <Stack spacing={1.5}>
+                        <Typography variant="body2" color="text.secondary">
+                          {q.hint}
+                        </Typography>
+                        <Typography variant="body2">
+                          Optionen:{" "}
+                          {(["A", "B", "C", "D"] as const)
+                            .map((k) => `${k}=${q.matchingOptions[k]}`)
+                            .join(" · ")}
+                        </Typography>
+                        {q.matchingItems.map((item) => (
+                          <TextField
+                            key={item.id}
+                            label={`${item.label} (A–D)`}
+                            size="small"
+                            value={
+                              (
+                                (answers[String(q.id)] as
+                                  | Record<string, string>
+                                  | undefined) ?? {}
+                              )[item.id] ?? ""
+                            }
+                            onChange={(e) =>
+                              setAnswers((prev) => ({
+                                ...prev,
+                                [String(q.id)]: {
+                                  ...((prev[String(q.id)] as
+                                    | Record<string, string>
+                                    | undefined) ?? {}),
+                                  [item.id]: e.target.value
+                                    .trim()
+                                    .toUpperCase()
+                                    .slice(0, 1),
+                                },
+                              }))
+                            }
+                            inputProps={{ maxLength: 1 }}
+                          />
+                        ))}
+                      </Stack>
+                    )}
+                  </Box>
+                ))}
+                <Button type="submit" variant="contained" disabled={loading}>
+                  {loading ? "Speichern…" : "Quiz absenden"}
+                </Button>
+              </Stack>
+            </Box>
+          )}
 
-        {step === "done" && result && (
-          <Stack spacing={2} sx={{ pt: 1 }}>
-            <Alert severity="success">
+          {step === "done" && result && !resultOpen && (
+            <Alert severity="success" sx={{ mt: 1 }}>
               Danke, {name}! Deine Antworten wurden gespeichert.
             </Alert>
-            <Typography variant="h4">
-              Ergebnis: {result.correctCount} von {result.totalQuestions} richtig
-            </Typography>
-          </Stack>
-        )}
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} color="inherit">
-          Schließen
-        </Button>
-      </DialogActions>
-    </Dialog>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={onClose} color="inherit">
+            Schließen
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {result && (
+        <QuizResultModal
+          open={resultOpen}
+          name={name}
+          correctCount={result.correctCount}
+          totalQuestions={result.totalQuestions}
+          onClose={handleCloseAll}
+        />
+      )}
+    </>
   );
 }

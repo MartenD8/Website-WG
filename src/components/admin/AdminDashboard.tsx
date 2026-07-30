@@ -30,6 +30,7 @@ import { EventFormDialog } from "@/components/admin/EventFormDialog";
 import { AdminBeerOverview } from "@/components/admin/AdminBeerOverview";
 import { AdminQuizOverview } from "@/components/admin/AdminQuizOverview";
 import { AdminAwardsOverview } from "@/components/admin/AdminAwardsOverview";
+import { AdminGuestLists } from "@/components/admin/AdminGuestLists";
 
 interface AdminDashboardProps {
   initialEvents: Event[];
@@ -325,6 +326,7 @@ export function AdminDashboard({ initialEvents, username }: AdminDashboardProps)
       />
 
       <AdminBeerOverview />
+      <AdminGuestLists />
       <AdminQuizOverview />
       <AdminAwardsOverview />
     </Stack>

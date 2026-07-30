@@ -2,6 +2,8 @@
 
 Produktionsreife Präsentationswebsite für einen Event-Kalender (25.09. – 18.10.) mit Material Design 3 (MUI), Dark/Light Mode, YouTube-Weiterleitung und geschütztem Adminbereich.
 
+**Projekt-Erklärung & Datei-Übersicht:** siehe Ordner [`erklaerung/`](./erklaerung/README.md) (Funktionen, wo man Texte findet, Datenspeicherung, Ausblick).
+
 ## Funktionen
 
 ### Öffentlich

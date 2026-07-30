@@ -80,6 +80,30 @@ export interface AwardResult {
   top: Array<{ name: string; votes: number }>;
 }
 
+export interface EventRsvp {
+  id: number;
+  eventId: number;
+  date: string;
+  name: string;
+  createdAt: string;
+}
+
+export interface EventGuestList {
+  eventId: number;
+  eventTitle: string;
+  date: string;
+  guests: EventRsvp[];
+}
+
+export interface QuizResultTier {
+  min: number;
+  max: number;
+  emoji: string;
+  title: string;
+  body: string;
+  accent: string;
+}
+
 export interface AdminUser {
   id: number;
   username: string;

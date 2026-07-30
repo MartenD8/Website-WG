@@ -22,6 +22,7 @@ import type { CalendarDay } from "@/lib/calendar";
 import { formatDisplayDate, youtubeThumbnail } from "@/lib/calendar";
 import { ExplorationBadge } from "@/components/ExplorationBadge";
 import { BeerCheckInForm } from "@/components/BeerCheckInForm";
+import { EventRsvpForm } from "@/components/EventRsvpForm";
 import type { BeerStats, ExplorationLevel } from "@/types";
 
 interface EventDialogProps {
@@ -137,6 +138,8 @@ export function EventDialog({
                 <ExplorationBadge
                   level={event.explorationLevel as ExplorationLevel}
                 />
+
+                <EventRsvpForm eventId={event.id} />
 
                 {showBeerForm && (
                   <BeerCheckInForm

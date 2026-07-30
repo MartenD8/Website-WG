@@ -195,3 +195,51 @@ export function scoreQuizAnswers(
   }
   return { correctCount, total: QUIZ_QUESTIONS.length };
 }
+
+export function getQuizResultTier(correctCount: number): {
+  emoji: string;
+  title: string;
+  body: string;
+  accent: string;
+} {
+  if (correctCount >= 10) {
+    return {
+      emoji: "🏆",
+      title: "Du bist eine WG-Legende!",
+      body: "Unglaublich! Du kennst die WG besser als manche Bewohner.",
+      accent: "#C9A227",
+    };
+  }
+  if (correctCount >= 8) {
+    return {
+      emoji: "🎉",
+      title: "Ehrenwerter WG-Gast!",
+      body: "Starkes Ergebnis! Man merkt, dass du schon einige legendäre Momente mit uns erlebt hast.",
+      accent: "#2E7D32",
+    };
+  }
+  if (correctCount >= 5) {
+    return {
+      emoji: "🍻",
+      title:
+        "Hättest gerne häufiger kommen können, dann hättest du auch mehr gewusst.",
+      body: 'Gar nicht schlecht – aber da fehlt noch viel bis zum Titel "WG-Legende".',
+      accent: "#E65100",
+    };
+  }
+  if (correctCount >= 2) {
+    return {
+      emoji: "🤔",
+      title: "Kennst du uns überhaupt?",
+      body: "Das war eher ausbaufähig. Vielleicht solltest du mehr trinken, damit sich dein Gehirn mehr merken kann von den Abenden.",
+      accent: "#5C6BC0",
+    };
+  }
+  return {
+    emoji: "💀",
+    title: "Das ist ja erbärmlich – du solltest wirklich zu allen Events kommen!",
+    body: "Da fehlen uns die Worte",
+    accent: "#C62828",
+  };
+}
+
