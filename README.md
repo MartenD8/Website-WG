@@ -29,15 +29,15 @@ Produktionsreife Präsentationswebsite für einen Event-Kalender (25.09. – 18.
 | Frontend | Next.js 15 (App Router), React 19, TypeScript (strict), MUI 6 |
 | Backend | Next.js Route Handlers |
 | Auth | JWT in httpOnly-Cookie (`jose`), bcryptjs |
-| Daten | JSON-Datei (`data/store.json`) |
+| Daten | SQLite (`data/wg.db`, `node:sqlite`, Node 22+) |
 | Validierung | Zod |
 
 ## Voraussetzungen
 
-- Node.js **20+** (empfohlen: 22 LTS)
+- Node.js **22+** (für eingebautes `node:sqlite`)
 - npm 10+
 
-Keine nativen Build-Tools nötig – die Daten liegen in einer JSON-Datei.
+Keine nativen Build-Tools nötig – SQLite kommt mit Node mit.
 
 ## Lokal starten
 
@@ -73,7 +73,7 @@ npm run db:seed
 
 Legt Beispiel-Events an und erzeugt ggf. den Admin-Account.
 
-Ohne Seed wird `data/store.json` beim ersten Request automatisch erstellt (inkl. Admin aus `.env.local`).
+Ohne Seed wird `data/wg.db` beim ersten Request automatisch erstellt (inkl. Admin aus `.env.local`). Eine vorhandene `data/store.json` wird einmalig migriert.
 
 ### 4. Entwicklungsserver
 
@@ -99,7 +99,7 @@ npm start
 ## Projektstruktur
 
 ```
-├── data/                 # store.json (gitignored) – Events & Admin
+├── data/                 # wg.db (gitignored) – Events & Admin
 ├── deploy/
 │   ├── ecosystem.config.cjs   # PM2
 │   └── nginx.conf             # Nginx Reverse Proxy
@@ -123,15 +123,9 @@ npm start
 ## Admin-Konfiguration
 
 1. Vor dem **ersten** Start `ADMIN_USERNAME` / `ADMIN_PASSWORD` in `.env.local` setzen.
-2. App starten – Admin wird in `data/store.json` angelegt.
+2. App starten – Admin wird in `data/wg.db` angelegt.
 3. Danach ändern Umgebungsvariablen den bestehenden Admin **nicht** mehr automatisch.
-4. Passwort ändern: Admin-Eintrag in `store.json` anpassen oder Datei löschen und neu seedén (Datenverlust der Events!):
-
-```bash
-# Neuen Hash erzeugen
-node -e "console.log(require('bcryptjs').hashSync('NeuesPasswort!', 12))"
-# In data/store.json unter admins[].passwordHash eintragen
-```
+4. Passwort ändern: `npm run admin:reset` (setzt Admin aus `.env` neu).
 
 ## Sicherheit
 
@@ -140,7 +134,7 @@ node -e "console.log(require('bcryptjs').hashSync('NeuesPasswort!', 12))"
 - Middleware schützt `/admin/*` (außer Login)
 - Zod-Validierung aller Schreibzugriffe
 - React escaped Ausgabe (XSS-Schutz)
-- Keine SQL-Schicht – JSON-Persistenz ohne Injection-Vektor
+- SQLite über parametrisierte Statements (`node:sqlite`)
 - Kein öffentliches Registrieren
 
 ## Deployment auf Ubuntu (Linux-Server)
@@ -255,14 +249,14 @@ pm2 restart event-calendar
 
 ### Backups
 
-JSON-Datei sichern:
+SQLite-Datei sichern:
 
 ```bash
-cp /var/www/event-calendar/data/store.json \
-   /var/backups/events-$(date +%F).json
+cp /var/www/event-calendar/data/wg.db \
+   /var/backups/wg-$(date +%F).db
 
 # Optional cron (täglich 03:00)
-# 0 3 * * * cp /var/www/event-calendar/data/store.json /var/backups/events-$(date +\%F).json
+# 0 3 * * * cp /var/www/event-calendar/data/wg.db /var/backups/wg-$(date +\%F).db
 ```
 
 ### Updates
@@ -305,7 +299,7 @@ Zusätzlich: Uptime-Monitoring (UptimeRobot, Better Stack) auf `https://deine-do
 | Problem | Lösung |
 |---------|--------|
 | 401 im Admin | Cookie/Session abgelaufen; neu einloggen; `AUTH_SECRET` unverändert lassen |
-| Admin-Login klappt nicht | Alten Hash in `data/store.json` prüfen; oder Datei löschen und neu starten/seedén (Datenverlust!) |
+| Admin-Login klappt nicht | `npm run admin:reset`; oder `data/wg.db` löschen und neu starten (Datenverlust!) |
 | Events erscheinen nicht | Im Admin „Aktiv“ prüfen; Cache/Hard-Reload |
 | Port 3000 belegt | In `ecosystem.config.cjs` anderen Port setzen und Nginx anpassen |
 | Nginx 502 | `pm2 status` – App läuft? `curl http://127.0.0.1:3000` |

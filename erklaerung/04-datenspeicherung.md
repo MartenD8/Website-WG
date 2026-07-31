@@ -5,53 +5,24 @@
 Alle dynamischen Daten liegen in:
 
 ```
-data/store.json
+data/wg.db
 ```
+
+(SQLite, Modul `node:sqlite` – Node.js **22+**, kein natives Addon nötig.)
 
 Pfad im Code: `src/lib/db.ts` (`DB_PATH`).
 
 - Die Datei wird **automatisch angelegt**, wenn sie fehlt.
 - Sie ist in `.gitignore` – wird **nicht** mit Git ausgeliefert.
-- Auf dem Server bleibt sie lokal im Projektordner (Backups separat machen!).
+- Alte `data/store.json` wird **einmalig** nach SQLite migriert (dann umbenannt in `store.json.migrated`).
 
-Statische Inhalte (Quizfragen, Award-Liste) stehen **nicht** in `store.json`, sondern im Code unter `src/data/`.
+Statische Inhalte (Quizfragen, Award-Liste) stehen **nicht** in der DB, sondern im Code unter `src/data/`.
 
 ---
 
-## Was steckt in `store.json`?
+## Was steckt in der Datenbank?
 
-| Schlüssel | Inhalt |
-|-----------|--------|
-| `admins` | Admin-Benutzer (Benutzername + **Passwort-Hash**, nie Klartext) |
-| `events` | Alle Kalender-Events |
-| `beerEntries` | Bier-Einträge (Name, Anzahl, Event) |
-| `quizSubmissions` | Quiz-Teilnahmen inkl. Antworten & Punktzahl |
-| `awardBallots` | Award-Abstimmungen (Wähler + Nominierungen) |
-| `eventRsvps` | Event-Anmeldungen (Gäste) |
-| `next*Id` | Laufende IDs für neue Einträge |
-
-### Event (vereinfacht)
-
-- `date`, `title`, `description`
-- `explorationLevel` (1–5)
-- `youtubeUrl`, `previewImage`
-- `isActive`
-- `beerCounterEnabled`
-
-### Beispiel-Struktur (Ausschnitt)
-
-```json
-{
-  "admins": [{ "id": 1, "username": "admin", "passwordHash": "..." }],
-  "events": [{ "id": 1, "date": "2026-09-26", "title": "...", "beerCounterEnabled": true }],
-  "beerEntries": [{ "id": 1, "eventId": 1, "name": "Max", "beers": 3 }],
-  "quizSubmissions": [],
-  "awardBallots": [],
-  "eventRsvps": [],
-  "nextEventId": 2,
-  "nextBeerEntryId": 2
-}
-```
+Tabellen u. a.: `admins`, `events`, `beer_entries`, `quiz_submissions`, `award_ballots`, `event_rsvps`.
 
 ---
 
@@ -87,15 +58,9 @@ Sessions: JWT-Cookie `event_admin_session` (httpOnly).
 **Backup:**
 
 ```bash
-cp data/store.json /pfad/zum/backup/store-$(date +%F).json
+cp data/wg.db /pfad/zum/backup/wg-$(date +%F).db
 ```
 
 **Restore:** Datei zurückkopieren und App neu starten (`pm2 restart …`).
 
-**Achtung:** Bei `npm run db:seed` werden Beispiel-Events geschrieben/überschrieben (gleiche Daten). Admin bleibt erhalten, wenn schon vorhanden.
-
----
-
-## Warum keine SQL-Datenbank?
-
-Für wenige Events und einfache Formulare reicht eine JSON-Datei. Vorteile: kein natives Modul, einfaches Backup, wenig Betrieb. Grenzen: keine parallelen Schreibzugriffe unter Last, alles in einer Datei – für eine WG-Party-Website ausreichend.
+**Achtung:** Bei `npm run db:seed` werden Beispiel-Events geschrieben/aktualisiert.

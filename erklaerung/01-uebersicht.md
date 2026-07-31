@@ -24,7 +24,7 @@ Administratoren verwalten Events und Auswertungen unter `/admin`.
 | UI | Material UI (MUI) 6 |
 | Auth | JWT in httpOnly-Cookie (`jose`) + bcrypt |
 | Validierung | Zod |
-| Persistenz | JSON-Datei `data/store.json` |
+| Persistenz | SQLite `data/wg.db` (`node:sqlite`) |
 
 ## Grobe Ordnerstruktur
 
@@ -37,7 +37,7 @@ Website WG/
 │   ├── lib/              # DB, Auth, Kalender, Validierung
 │   ├── theme/            # Design / Farben / Level-Farben
 │   └── types/            # TypeScript-Typen
-├── data/                 # Laufzeit-Datenbank (store.json, gitignored)
+├── data/                 # Laufzeit-DB (wg.db, gitignored)
 ├── scripts/              # Seed & Admin-Reset
 ├── deploy/               # Nginx / PM2
 ├── erklaerung/           # Diese Dokumentation

@@ -29,7 +29,7 @@ Ideen, die sich gut an den bestehenden Aufbau anschließen würden – **noch ni
 - Rollen (z. B. nur Lesen vs. voller Admin)
 - Audit-Log (wer hat wann was geändert)
 - Export als CSV/Excel (Gäste, Bier, Quiz, Awards)
-- Automatische Backups von `store.json`
+- Automatische Backups von `wg.db`
 - Umstieg auf SQLite/Postgres, falls mehr Traffic oder Multi-Server
 
 ## Design & UX

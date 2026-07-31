@@ -33,29 +33,45 @@ export function useColorMode(): ColorModeContextValue {
 
 const STORAGE_KEY = "event-calendar-color-mode";
 
+function readStoredMode(): ColorMode | null {
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    if (stored === "light" || stored === "dark") return stored;
+  } catch {
+    /* private mode */
+  }
+  return null;
+}
+
+function writeStoredMode(mode: ColorMode): void {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, mode);
+  } catch {
+    /* private mode */
+  }
+}
+
 export function AppThemeProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<ColorMode>("light");
-  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(STORAGE_KEY) as ColorMode | null;
-    if (stored === "light" || stored === "dark") {
+    const stored = readStoredMode();
+    if (stored) {
       setModeState(stored);
     } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
       setModeState("dark");
     }
-    setReady(true);
   }, []);
 
   const setMode = useCallback((next: ColorMode) => {
     setModeState(next);
-    window.localStorage.setItem(STORAGE_KEY, next);
+    writeStoredMode(next);
   }, []);
 
   const toggleMode = useCallback(() => {
     setModeState((prev) => {
       const next = prev === "light" ? "dark" : "light";
-      window.localStorage.setItem(STORAGE_KEY, next);
+      writeStoredMode(next);
       return next;
     });
   }, []);
@@ -72,9 +88,7 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
       <ColorModeContext.Provider value={value}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          <div style={{ visibility: ready ? "visible" : "hidden" }}>
-            {children}
-          </div>
+          {children}
         </ThemeProvider>
       </ColorModeContext.Provider>
     </AppRouterCacheProvider>

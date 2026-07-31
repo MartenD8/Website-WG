@@ -41,6 +41,7 @@ yarn-error.log*
 /data/*.db-shm
 /data/store.json
 /data/store.json.tmp
+/data/store.json.migrated
 
 # typescript
 *.tsbuildinfo
