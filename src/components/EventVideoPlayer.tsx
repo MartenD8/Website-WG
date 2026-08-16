@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { MouseEvent } from "react";
 import Image from "next/image";
 import { Box, ButtonBase, Typography, alpha } from "@mui/material";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
@@ -102,6 +103,11 @@ export function EventVideoPlayer({
           src={src}
           poster={poster ?? undefined}
           controls
+          controlsList="nodownload noplaybackrate"
+          disablePictureInPicture
+          onContextMenu={(event: MouseEvent<HTMLVideoElement>) =>
+            event.preventDefault()
+          }
           autoPlay={playing}
           playsInline
           preload="metadata"
