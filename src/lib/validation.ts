@@ -1,9 +1,19 @@
 import { z } from "zod";
+import { VIDEO_PATH_PATTERN } from "@/lib/video";
 
 const optionalUrl = z
   .union([z.string().url(), z.literal(""), z.null()])
   .optional()
   .transform((v) => (v === "" || v === undefined ? null : v));
+
+/** Only paths produced by the upload route are accepted. */
+const optionalVideoPath = z
+  .union([z.string(), z.null()])
+  .optional()
+  .transform((v) => (v === "" || v === undefined ? null : v))
+  .refine((v) => v === null || VIDEO_PATH_PATTERN.test(v), {
+    message: "Ungültiger Videopfad – bitte Video erneut hochladen",
+  });
 
 export const eventSchema = z.object({
   date: z
@@ -24,12 +34,7 @@ export const eventSchema = z.object({
     .int()
     .min(1)
     .max(5) as z.ZodType<1 | 2 | 3 | 4 | 5>,
-  youtubeUrl: optionalUrl.refine(
-    (url) =>
-      url === null ||
-      /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//i.test(url),
-    { message: "Nur YouTube-URLs sind erlaubt" }
-  ),
+  videoPath: optionalVideoPath,
   previewImage: optionalUrl,
   isActive: z.boolean().optional().default(true),
   beerCounterEnabled: z.boolean().optional().default(false),
@@ -105,6 +110,10 @@ export const rsvpSchema = z.object({
     .trim()
     .min(1, "Name ist erforderlich")
     .max(40, "Name darf maximal 40 Zeichen haben"),
+});
+
+export const videoDeleteSchema = z.object({
+  videoPath: z.string().regex(VIDEO_PATH_PATTERN, "Ungültiger Videopfad"),
 });
 
 export const loginSchema = z.object({

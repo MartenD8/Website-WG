@@ -40,9 +40,21 @@ function getDb(): DatabaseSync {
     "PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;"
   );
   initSchema(db);
+  applySchemaUpgrades(db);
   ensureAdmin(db);
   migrateFromJsonIfNeeded(db);
   return db;
+}
+
+/** Add columns introduced after the initial release to existing databases. */
+function applySchemaUpgrades(database: DatabaseSync): void {
+  const columns = database
+    .prepare("PRAGMA table_info(events)")
+    .all() as Array<{ name: string }>;
+
+  if (!columns.some((column) => column.name === "video_path")) {
+    database.exec("ALTER TABLE events ADD COLUMN video_path TEXT");
+  }
 }
 
 function initSchema(database: DatabaseSync): void {
@@ -59,7 +71,7 @@ function initSchema(database: DatabaseSync): void {
       title TEXT NOT NULL DEFAULT '',
       description TEXT NOT NULL DEFAULT '',
       exploration_level INTEGER NOT NULL DEFAULT 1,
-      youtube_url TEXT,
+      video_path TEXT,
       preview_image TEXT,
       is_active INTEGER NOT NULL DEFAULT 1,
       beer_counter_enabled INTEGER NOT NULL DEFAULT 0,
@@ -125,7 +137,8 @@ function migrateFromJsonIfNeeded(database: DatabaseSync): void {
 
   try {
     const raw = JSON.parse(fs.readFileSync(JSON_LEGACY, "utf-8")) as {
-      events?: Event[];
+      /** The JSON store predates video uploads and only knew `youtubeUrl`. */
+      events?: Array<Omit<Event, "videoPath">>;
       beerEntries?: BeerEntry[];
       quizSubmissions?: QuizSubmission[];
       awardBallots?: AwardBallot[];
@@ -135,7 +148,7 @@ function migrateFromJsonIfNeeded(database: DatabaseSync): void {
 
     const insertEvent = database.prepare(
       `INSERT OR IGNORE INTO events
-       (id, date, title, description, exploration_level, youtube_url, preview_image, is_active, beer_counter_enabled, created_at, updated_at)
+       (id, date, title, description, exploration_level, video_path, preview_image, is_active, beer_counter_enabled, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     );
     for (const e of raw.events ?? []) {
@@ -145,7 +158,7 @@ function migrateFromJsonIfNeeded(database: DatabaseSync): void {
         e.title,
         e.description,
         e.explorationLevel,
-        e.youtubeUrl,
+        null,
         e.previewImage,
         e.isActive ? 1 : 0,
         e.beerCounterEnabled ? 1 : 0,
@@ -226,7 +239,7 @@ function mapEvent(row: Record<string, unknown>): Event {
     title: row.title as string,
     description: row.description as string,
     explorationLevel: row.exploration_level as ExplorationLevel,
-    youtubeUrl: (row.youtube_url as string | null) ?? null,
+    videoPath: (row.video_path as string | null) ?? null,
     previewImage: (row.preview_image as string | null) ?? null,
     isActive: Boolean(row.is_active),
     beerCounterEnabled: Boolean(row.beer_counter_enabled),
@@ -278,7 +291,7 @@ export function createEvent(input: EventInput): Event {
     const result = getDb()
       .prepare(
         `INSERT INTO events
-         (date, title, description, exploration_level, youtube_url, preview_image, is_active, beer_counter_enabled, created_at, updated_at)
+         (date, title, description, exploration_level, video_path, preview_image, is_active, beer_counter_enabled, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
@@ -286,7 +299,7 @@ export function createEvent(input: EventInput): Event {
         input.title,
         input.description,
         input.explorationLevel,
-        input.youtubeUrl ?? null,
+        input.videoPath ?? null,
         input.previewImage ?? null,
         input.isActive === false ? 0 : 1,
         input.beerCounterEnabled ? 1 : 0,
@@ -309,7 +322,7 @@ export function updateEvent(id: number, input: EventInput): Event | null {
       .prepare(
         `UPDATE events SET
           date = ?, title = ?, description = ?, exploration_level = ?,
-          youtube_url = ?, preview_image = ?, is_active = ?, beer_counter_enabled = ?,
+          video_path = ?, preview_image = ?, is_active = ?, beer_counter_enabled = ?,
           updated_at = ?
          WHERE id = ?`
       )
@@ -318,7 +331,7 @@ export function updateEvent(id: number, input: EventInput): Event | null {
         input.title,
         input.description,
         input.explorationLevel,
-        input.youtubeUrl ?? null,
+        input.videoPath ?? null,
         input.previewImage ?? null,
         input.isActive === false ? 0 : 1,
         input.beerCounterEnabled ? 1 : 0,

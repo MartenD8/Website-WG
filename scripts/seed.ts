@@ -38,7 +38,7 @@ const samples = [
     description:
       "Der Startschuss für die Event-Reihe. Wir stellen das Format vor, erklären die Explorationsstufen und zeigen, wie du die täglichen Videos optimal nutzt.",
     explorationLevel: 1 as const,
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    videoPath: null,
     previewImage: null,
     isActive: true,
     beerCounterEnabled: false,
@@ -49,7 +49,7 @@ const samples = [
     description:
       "Lerne die Bausteine kennen: Beobachtung, Fragen stellen und erste Hypothesen formulieren.",
     explorationLevel: 2 as const,
-    youtubeUrl: "https://www.youtube.com/watch?v=jNQXAC9IVRw",
+    videoPath: null,
     previewImage: null,
     isActive: true,
     beerCounterEnabled: false,
@@ -60,7 +60,7 @@ const samples = [
     description:
       "Abschluss der Kalenderperiode: Zusammenfassung der wichtigsten Learnings.",
     explorationLevel: 4 as const,
-    youtubeUrl: "https://www.youtube.com/watch?v=hTWKbfoikeg",
+    videoPath: null,
     previewImage: null,
     isActive: true,
     beerCounterEnabled: false,
@@ -71,7 +71,7 @@ const samples = [
     description:
       "Vom 19. bis 29. Oktober – der besondere Abschlusszeitraum mit weiteren Highlights der WG.",
     explorationLevel: 5 as const,
-    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    videoPath: null,
     previewImage: null,
     isActive: true,
     beerCounterEnabled: false,

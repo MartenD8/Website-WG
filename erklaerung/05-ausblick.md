@@ -42,7 +42,7 @@ Ideen, die sich gut an den bestehenden Aufbau anschließen würden – **noch ni
 ## Integration
 
 - Discord-/WhatsApp-Benachrichtigung bei neuer Anmeldung
-- YouTube-Playlist automatisch aus Event-Links
+- Videos automatisch komprimieren / Thumbnails erzeugen
 - Domain/HTTPS-Checkliste als Admin-Statusseite
 
 ---

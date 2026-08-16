@@ -1,12 +1,24 @@
 # 02 – Funktionen
 
-## Öffentlicher Bereich
+## Zugang zur Website
+
+- Die komplette Seite ist passwortgeschützt: Wer sie öffnet, landet zuerst auf `/login`
+- Gemeinsame Zugangsdaten für alle Gäste: Benutzername **HasselWG**, Passwort **#RettetXoro**
+- Der Benutzername wird ohne Rücksicht auf Groß-/Kleinschreibung akzeptiert
+- Nach der Anmeldung bleibt man 30 Tage angemeldet (Cookie)
+- Ruft man direkt einen Unterlink auf, wird man nach der Anmeldung dorthin weitergeleitet
+- Auch die hochgeladenen Videos sind gesperrt und nur für Angemeldete abrufbar
+- Wer als Admin angemeldet ist, braucht das Gäste-Passwort nicht zusätzlich
+
+## Öffentlicher Bereich (nach Anmeldung)
 
 ### Kalender & Events
 
 - Eine Kachel pro Tag (26.09. – 18.10.) plus eine Abschluss-Kachel (19.10. – 29.10.)
 - Klick öffnet die Detailansicht (Modal)
-- Inhalte: Titel, Beschreibung, Explorationsstufe (Level), optional Vorschaubild, YouTube-Button
+- Inhalte: Titel, Beschreibung, Explorationsstufe (Level), optional Vorschaubild und Video
+- Video: nur in der Detailansicht, nicht auf der Kachel – erst der Klick auf die Kachel zeigt es
+- Mit Vorschaubild startet das Video per Klick darauf, ohne Vorschaubild erscheint der Player direkt
 - In der Detailansicht: **Event-Anmeldung** (Name)
 
 ### Biercounter
@@ -45,7 +57,8 @@
 - Anlegen, Bearbeiten, Löschen
 - Aktiv/Inaktiv
 - Bier-Zähler an/aus
-- Felder: Datum, Titel, Beschreibung, Level, YouTube, Vorschaubild
+- Felder: Datum, Titel, Beschreibung, Level, Video-Upload, Vorschaubild
+- Video hochladen, ersetzen oder entfernen (MP4/WebM, keine Größenbeschränkung, mit Fortschrittsanzeige)
 
 ### Biercounter-Übersicht
 

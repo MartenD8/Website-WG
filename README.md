@@ -1,6 +1,6 @@
 # Event Kalender
 
-Produktionsreife Präsentationswebsite für einen Event-Kalender (25.09. – 18.10.) mit Material Design 3 (MUI), Dark/Light Mode, YouTube-Weiterleitung und geschütztem Adminbereich.
+Produktionsreife Präsentationswebsite für einen Event-Kalender (25.09. – 18.10.) mit Material Design 3 (MUI), Dark/Light Mode, eigenem Video-Player und geschütztem Adminbereich.
 
 **Projekt-Erklärung & Datei-Übersicht:** siehe Ordner [`erklaerung/`](./erklaerung/README.md) (Funktionen, wo man Texte findet, Datenspeicherung, Ausblick).
 
@@ -11,15 +11,21 @@ Produktionsreife Präsentationswebsite für einen Event-Kalender (25.09. – 18.
 - Kalenderübersicht mit einer Kachel pro Tag
 - Eventtitel, Vorschau, Explorationsstufe (Level 1–5)
 - Kennzeichnung leerer Tage
-- Detail-Dialog mit Beschreibung und „YouTube öffnen“
+- Detail-Dialog mit Beschreibung und eingebautem Video-Player (Klick auf die Vorschau startet das Video)
 - Responsive Layout (Mobile First)
 - Hell- und Dunkelmodus
+
+### Zugang
+
+- Die gesamte Website ist durch eine gemeinsame Besucher-Anmeldung geschützt (`/login`)
+- Standardzugang: Benutzer `HasselWG`, Passwort `#RettetXoro` (überschreibbar via `SITE_USERNAME` / `SITE_PASSWORD`)
+- Hochgeladene Videos liegen ebenfalls hinter der Sperre
 
 ### Admin
 
 - Login mit Benutzername/Passwort (kein öffentliches Registrieren)
 - Dashboard mit CRUD für Events
-- Explorationsstufe, YouTube-Link, Beschreibung, Vorschaubild
+- Explorationsstufe, Video-Upload (MP4/WebM), Beschreibung, Vorschaubild
 - Aktiv/Inaktiv-Schalter (sofort auf der Startseite sichtbar)
 
 ## Technologie
@@ -60,6 +66,9 @@ Mindestens setzen:
 | `AUTH_SECRET` | Geheimer Schlüssel für JWT (≥ 16 Zeichen, Produktion: ≥ 32) |
 | `ADMIN_USERNAME` | Initialer Admin (nur beim ersten DB-Start) |
 | `ADMIN_PASSWORD` | Initiales Passwort (nur beim ersten DB-Start) |
+| `SITE_USERNAME` | Besucher-Login für die ganze Seite (Standard: `HasselWG`) |
+| `SITE_PASSWORD` | Passwort dazu (Standard: `#RettetXoro`) – in `.env` **in Anführungszeichen** setzen, sonst gilt `#` als Kommentar |
+| `GUEST_SESSION_MAX_AGE_DAYS` | Optional, Gültigkeit der Besucher-Anmeldung (Standard: 30 Tage) |
 | `NEXT_PUBLIC_SITE_URL` | Öffentliche URL (z. B. `http://localhost:3000`) |
 | `NEXT_PUBLIC_CALENDAR_YEAR` | Optional, Kalenderjahr (Standard: aktuelles Jahr) |
 
@@ -84,7 +93,12 @@ npm run dev
 - Website: [http://localhost:3000](http://localhost:3000)
 - Admin: [http://localhost:3000/admin](http://localhost:3000/admin)
 
-Standard-Login (aus `.env.example` / `.env.local`):
+Besucher-Login (gesamte Website):
+
+- Benutzer: `HasselWG`
+- Passwort: `#RettetXoro`
+
+Admin-Login (aus `.env.example` / `.env.local`):
 
 - Benutzer: `admin`
 - Passwort: `Admin123!`
@@ -113,7 +127,7 @@ npm start
 │   │   └── page.tsx      # Öffentliche Startseite
 │   ├── components/       # UI (Kalender, Dialog, Admin)
 │   ├── lib/              # DB, Auth, Validierung, Kalenderlogik
-│   ├── middleware.ts     # Schutz von /admin/*
+│   ├── middleware.ts     # Besucher-Sperre + Schutz von /admin/*
 │   ├── theme/            # MUI MD3-Theme + Dark Mode
 │   └── types/
 ├── .env.example
@@ -131,7 +145,8 @@ npm start
 
 - Passwort-Hashing mit bcrypt (Cost 12)
 - JWT-Session in httpOnly-, SameSite=Lax-Cookie (Secure in Production)
-- Middleware schützt `/admin/*` (außer Login)
+- Middleware schützt die gesamte Website (außer Login-Seiten und Auth-Endpunkten) sowie zusätzlich `/admin/*`
+- Gast-Tokens werden mit einem abgeleiteten Schlüssel signiert und können nicht als Admin-Token verwendet werden
 - Zod-Validierung aller Schreibzugriffe
 - React escaped Ausgabe (XSS-Schutz)
 - SQLite über parametrisierte Statements (`node:sqlite`)
@@ -303,6 +318,7 @@ Zusätzlich: Uptime-Monitoring (UptimeRobot, Better Stack) auf `https://deine-do
 | Events erscheinen nicht | Im Admin „Aktiv“ prüfen; Cache/Hard-Reload |
 | Port 3000 belegt | In `ecosystem.config.cjs` anderen Port setzen und Nginx anpassen |
 | Nginx 502 | `pm2 status` – App läuft? `curl http://127.0.0.1:3000` |
+| Besucher-Passwort wird nicht angenommen | `SITE_PASSWORD` in `.env.local` ohne Anführungszeichen? `#` startet dort einen Kommentar |
 
 ## Lizenz
 

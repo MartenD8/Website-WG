@@ -44,6 +44,8 @@ Website WG/
 │   ├── wg.db                    # SQLite-Datenbank (gitignored, Laufzeit)
 │   ├── store.json.migrated      # Alte JSON nach Migration (optional)
 │   └── .gitkeep
+├── public/
+│   └── uploads/videos/          # Hochgeladene Event-Videos (gitignored)
 ├── deploy/
 │   ├── ecosystem.config.cjs     # PM2-Konfiguration (App-Name: event-calendar)
 │   └── nginx*.conf              # Reverse Proxy
@@ -67,15 +69,19 @@ Website WG/
 │   ├── lib/                     # Backend-Logik
 │   │   ├── db.ts                # SQLite-Zugriff (zentrale Schicht)
 │   │   ├── auth.ts              # Session-Cookies
-│   │   ├── session.ts           # JWT erstellen/verifizieren
+│   │   ├── session.ts           # JWT erstellen/verifizieren (Admin + Gast)
+│   │   ├── siteAccess.ts        # Zugangsdaten der Besucher-Sperre (Server)
+│   │   ├── cookies.ts           # Secure-Flag-Logik für Cookies
 │   │   ├── validation.ts        # Zod-Schemas
+│   │   ├── video.ts             # Video-Konstanten (client-safe)
+│   │   ├── uploads.ts           # Video-Dateien speichern/löschen (Server)
 │   │   └── calendar.ts          # Kalender-Logik, Datumsformatierung
 │   ├── theme/
 │   │   ├── theme.ts             # MUI-Theme, LEVEL_COLORS
 │   │   └── ThemeRegistry.tsx    # ThemeProvider, Dark Mode
 │   ├── types/
 │   │   └── index.ts             # Alle TypeScript-Interfaces
-│   └── middleware.ts            # Schützt /admin/*
+│   └── middleware.ts            # Besucher-Sperre für alles + Schutz für /admin/*
 ├── .env.example
 ├── package.json                 # name: "event-calendar"
 └── next.config.ts
@@ -96,6 +102,7 @@ Website WG/
 | Das große WG-Quiz | `QuizSubmission`, `QuizQuestion` | Fragen statisch in `quiz.ts` |
 | Awards | `AwardBallot`, `AwardDefinition` | Abstimmung, Liste in `awards.ts` |
 | Event-Anmeldung / Gästeliste | `EventRsvp`, `EventGuestList` | RSVP im Event-Detail-Modal |
+| Event-Video | `videoPath`, `EventVideoPlayer` | Selbst gehostetes MP4/WebM |
 | Admin | `AdminUser`, `SessionPayload` | Ein Admin-Account in DB |
 | Abschluss-Kachel / Finale | `isRange`, `CALENDAR_FINALE_*` | Zeitraum 19.10.–29.10. |
 | Halt-Stop-Meldung | `DUPLICATE_NAME` | Doppelte Teilnahme (Bier/Quiz/Awards) |
@@ -143,7 +150,7 @@ interface Event {
   title: string;
   description: string;
   explorationLevel: ExplorationLevel;
-  youtubeUrl: string | null;
+  videoPath: string | null;    // z. B. "/uploads/videos/<uuid>.mp4"
   previewImage: string | null;
   isActive: boolean;
   beerCounterEnabled: boolean;
@@ -156,7 +163,7 @@ interface EventInput {
   title: string;
   description: string;
   explorationLevel: ExplorationLevel;
-  youtubeUrl?: string | null;
+  videoPath?: string | null;
   previewImage?: string | null;
   isActive?: boolean;
   beerCounterEnabled?: boolean;
@@ -276,7 +283,7 @@ interface CalendarDay {
 | SQLite-Spalte | TypeScript-Feld |
 |---------------|-----------------|
 | `exploration_level` | `explorationLevel` |
-| `youtube_url` | `youtubeUrl` |
+| `video_path` | `videoPath` |
 | `preview_image` | `previewImage` |
 | `is_active` | `isActive` (INTEGER 0/1 → boolean) |
 | `beer_counter_enabled` | `beerCounterEnabled` |
@@ -287,6 +294,8 @@ interface CalendarDay {
 | `total_questions` | `totalQuestions` |
 | `voter_name` | `voterName` |
 | `nominations_json` | `nominations` (JSON geparst) |
+
+**Schema-Upgrades:** `applySchemaUpgrades()` ergänzt fehlende Spalten (`PRAGMA table_info` + `ALTER TABLE`) beim Öffnen der DB. Die Altspalte `youtube_url` bleibt in bestehenden Datenbanken erhalten, wird aber nicht mehr gelesen oder geschrieben.
 
 ### Exportierte DB-Funktionen (`src/lib/db.ts`)
 
@@ -362,12 +371,14 @@ Fehler: `{ error: string, details?: unknown }`
 | DELETE | `/api/auth/login` | — | Logout |
 | GET | `/api/auth/me` | Cookie | Aktueller User |
 | POST | `/api/auth/logout` | — | Logout (Alternative) |
+| POST | `/api/auth/site` | — | **Besucher-Login** (gesamte Website), setzt Gast-Cookie |
+| DELETE | `/api/auth/site` | — | Besucher-Logout |
 
-**Cookie-Name:** `event_admin_session` (`SESSION_COOKIE`)  
-**Cookie-Flags:** httpOnly, sameSite=lax, secure nur bei HTTPS (`X-Forwarded-Proto` oder `COOKIE_SECURE`)
+**Cookie-Namen:** `event_admin_session` (`SESSION_COOKIE`) für Admins, `event_guest_session` (`GUEST_COOKIE`) für Besucher  
+**Cookie-Flags:** httpOnly, sameSite=lax, secure nur bei HTTPS (`X-Forwarded-Proto` oder `COOKIE_SECURE`) – gemeinsame Logik in `@/lib/cookies`
 
-Login-Body: `{ username: string, password: string }`  
-Erfolg: `{ success: true, user: { id, username } }`
+Login-Body (beide Routen): `{ username: string, password: string }`  
+Erfolg Admin: `{ success: true, user: { id, username } }`, Erfolg Besucher: `{ success: true }`
 
 ### Events
 
@@ -409,6 +420,19 @@ Body (POST/PUT): `EventInput` (siehe Zod `eventSchema`)
 | POST | `/api/awards` | — | `{ voterName, nominations }` |
 | GET | `/api/awards/results` | Admin | Top 3 je Award |
 
+### Video-Upload
+
+| Methode | Route | Auth | Beschreibung |
+|---------|-------|------|--------------|
+| POST | `/api/uploads/video` | Admin | Datei als **roher Request-Body**, MIME-Typ im `Content-Type` → `{ videoPath }` |
+| DELETE | `/api/uploads/video` | Admin | `{ videoPath }` – entfernt eine nicht referenzierte Datei |
+
+- Erlaubt: `video/mp4`, `video/webm`
+- **Keine Größenbeschränkung** – der Body wird per Stream direkt auf die Platte geschrieben (konstanter Speicherbedarf). Deshalb **kein** `multipart/form-data`: `request.formData()` würde die komplette Datei in den RAM laden.
+- Client lädt per `XMLHttpRequest` hoch, um den Fortschritt anzuzeigen
+- Ablage: `public/uploads/videos/<uuid>.<ext>`, öffentlich unter `/uploads/videos/…`
+- Beim Ersetzen/Löschen eines Events wird die alte Datei automatisch entfernt
+
 ### RSVP (Event-Anmeldung)
 
 | Methode | Route | Auth | Beschreibung |
@@ -423,7 +447,8 @@ Body (POST/PUT): `EventInput` (siehe Zod `eventSchema`)
 
 | Schema | Felder / Regeln |
 |--------|-----------------|
-| `eventSchema` | `date` (YYYY-MM-DD), `title` (1–200), `description` (max 5000), `explorationLevel` (1–5), `youtubeUrl` (nur YouTube), `previewImage`, `isActive`, `beerCounterEnabled` |
+| `eventSchema` | `date` (YYYY-MM-DD), `title` (1–200), `description` (max 5000), `explorationLevel` (1–5), `videoPath` (muss `VIDEO_PATH_PATTERN` entsprechen), `previewImage`, `isActive`, `beerCounterEnabled` |
+| `videoDeleteSchema` | `videoPath` (Pfad aus dem Upload) |
 | `beerEntrySchema` | `eventId` (positive int), `name` (1–40), `beers` (1–50, int) |
 | `beerEntryUpdateSchema` | `name?`, `beers?` |
 | `quizSubmitSchema` | `name` (1–40), `answers` (Record) |
@@ -436,13 +461,37 @@ Body (POST/PUT): `EventInput` (siehe Zod `eventSchema`)
 
 ## 10. Authentifizierung & Middleware
 
-### Ablauf
+Es gibt **zwei getrennte Ebenen**: eine Besucher-Sperre für die gesamte Website und darüber hinaus die Admin-Anmeldung.
+
+### Ablauf Besucher (gesamte Website)
+
+1. Jeder Aufruf ohne Session landet auf `/login` (Deep-Link wird als `?next=` gemerkt)
+2. `POST /api/auth/site` prüft die geteilten Zugangsdaten aus `@/lib/siteAccess`
+3. JWT wird in Cookie `event_guest_session` gesetzt (Standard 30 Tage)
+4. Zugangsdaten: `SITE_USERNAME` / `SITE_PASSWORD`, Standard `HasselWG` / `#RettetXoro`
+5. Benutzername wird case-insensitive geprüft, Passwort exakt (`timingSafeEqual`)
+
+### Ablauf Admin
 
 1. Admin loggt sich unter `/admin/login` ein
 2. `POST /api/auth/login` prüft bcrypt-Hash in `admins`-Tabelle
 3. JWT wird in Cookie `event_admin_session` gesetzt
 4. `src/middleware.ts` schützt `/admin/*` (außer `/admin/login`)
 5. API-Routen nutzen `requireSession()` aus `@/lib/auth`
+6. Eine Admin-Session gilt automatisch auch als Besucher-Zugang (kein doppeltes Login)
+
+### Middleware-Regeln (`src/middleware.ts`)
+
+| Pfad | Verhalten ohne Session |
+|------|------------------------|
+| `/login`, `/admin/login`, `/api/auth/*` | immer offen |
+| `/admin/*` | Redirect auf `/admin/login` |
+| `/api/*` (übrige) | **401 JSON** statt Redirect |
+| alles andere inkl. `/uploads/videos/*` | Redirect auf `/login?next=…` |
+
+Vom Matcher ausgenommen: `_next/static`, `_next/image`, `favicon.ico` und Bild-/Meta-Dateiendungen. Videos liegen bewusst **hinter** der Sperre; Range-Requests (206) funktionieren dort weiterhin.
+
+**Sicherheitsdetail:** Gast-Tokens werden mit einem abgeleiteten Schlüssel (`AUTH_SECRET + "::guest"`) signiert. Dadurch lässt sich ein Gast-Token nicht in das Admin-Cookie kopieren und umgekehrt.
 
 ### Erst-Anlage Admin
 
@@ -455,8 +504,19 @@ Body (POST/PUT): `EventInput` (siehe Zod `eventSchema`)
 ```typescript
 // session.ts
 SESSION_COOKIE = "event_admin_session"
+GUEST_COOKIE = "event_guest_session"
 createSessionToken(userId, username): Promise<string>
 verifySessionToken(token): Promise<SessionPayload | null>
+createGuestToken(username): Promise<string>
+verifyGuestToken(token): Promise<boolean>
+getGuestMaxAgeSeconds(): number          // GUEST_SESSION_MAX_AGE_DAYS, Standard 30
+
+// siteAccess.ts (nur Server)
+getSiteUsername(): string
+verifySiteCredentials(username, password): boolean
+
+// cookies.ts
+cookieSecure(request): boolean           // Secure nur bei echtem HTTPS
 
 // auth.ts
 getSession(): Promise<SessionPayload | null>
@@ -501,7 +561,8 @@ class AuthError extends Error
 |----------|-------|---------|
 | `CalendarGrid` | `CalendarGrid.tsx` | Startseite: Banner, Quiz/Awards-Buttons, Kacheln |
 | `EventCard` | `EventCard.tsx` | Tageskachel |
-| `EventDialog` | `EventDialog.tsx` | Event-Modal (YouTube, RSVP, Bier) |
+| `EventDialog` | `EventDialog.tsx` | Event-Modal (Video, RSVP, Bier) |
+| `EventVideoPlayer` | `EventVideoPlayer.tsx` | Vorschaubild → Klick → `<video controls>` |
 | `BeerCounterBanner` | `BeerCounterBanner.tsx` | „Anzahl vergenussverferkelter Bier“ |
 | `BeerCheckInForm` | `BeerCheckInForm.tsx` | Bier-Formular im Modal |
 | `EventRsvpForm` | `EventRsvpForm.tsx` | Anmeldung im Modal |
@@ -529,6 +590,7 @@ class AuthError extends Error
 | `/` | `src/app/page.tsx` | Server: `getActiveEvents()`, `getBeerStats()` → `CalendarGrid` |
 | `/admin` | `src/app/admin/page.tsx` | Server: Session-Check, `getAllEvents()` |
 | `/admin/login` | `src/app/admin/login/page.tsx` | Client-Login-Formular |
+| `/login` | `src/app/login/page.tsx` | Besucher-Login (Client), Sperre für die ganze Seite |
 
 **Client vs. Server:** Komponenten mit `"use client"` sind interaktiv (Modals, Forms). Seiten laden DB-Daten serverseitig und übergeben Props.
 
@@ -546,6 +608,7 @@ class AuthError extends Error
 | `beerCounterEnabled: false` | Kein Bier-Formular | 403 bei POST |
 | Event-Datum doppelt | „Für dieses Datum existiert bereits ein Event" | 409 |
 | Admin ohne Session | Redirect zu `/admin/login` | 401 |
+| Besucher ohne Session | Redirect zu `/login?next=…` | 401 bei `/api/*` |
 
 **Duplikat-Prüfung:** Namen case-insensitive (`COLLATE NOCASE` in SQLite für Quiz/Awards; Bier pro `event_id` + `lower(name)`).
 
@@ -558,10 +621,15 @@ AUTH_SECRET=...                    # JWT-Secret, min. 16 Zeichen (empfohlen 32+)
 ADMIN_USERNAME=admin               # Nur bei Erst-Anlage
 ADMIN_PASSWORD=Admin123!           # Nur bei Erst-Anlage
 SESSION_MAX_AGE_HOURS=24
+SITE_USERNAME=HasselWG             # Besucher-Login, Standard HasselWG
+SITE_PASSWORD="#RettetXoro"        # Standard #RettetXoro – Anführungszeichen nötig!
+GUEST_SESSION_MAX_AGE_DAYS=30      # Optional, Standard 30
 NEXT_PUBLIC_SITE_URL=https://...   # Metadata, OG
 NEXT_PUBLIC_CALENDAR_YEAR=2026     # Optional, für Client-Kalenderjahr
 COOKIE_SECURE=true|false           # Optional, sonst auto via X-Forwarded-Proto
 ```
+
+> `SITE_PASSWORD` muss in Anführungszeichen stehen: Ein unquotiertes `#` startet in `.env`-Dateien einen Kommentar, der Wert wäre sonst leer.
 
 ---
 
@@ -671,7 +739,9 @@ setBeerStats(data.stats);
 | Kalender-Zeitraum | `src/types/index.ts` → `CALENDAR_*` |
 | Halt-Stop-Meldung | `src/app/api/beers/route.ts`, `quiz/route.ts`, `awards/route.ts` |
 | RSVP-Doppel-Meldung | `src/app/api/rsvp/route.ts` |
-| Neue DB-Tabelle | `src/lib/db.ts` (Schema + Funktionen) |
+| Neue DB-Tabelle / -Spalte | `src/lib/db.ts` (Schema + `applySchemaUpgrades` + Funktionen) |
+| Video-Grenzwerte (Typ/Größe) | `src/lib/video.ts` |
+| Video-Speicherort | `src/lib/uploads.ts` |
 | Neue Validierung | `src/lib/validation.ts` |
 | Admin-UI erweitern | `src/components/admin/AdminDashboard.tsx` + neue Admin-Komponente |
 
@@ -686,6 +756,10 @@ setBeerStats(data.stats);
 5. **Theme `visibility:hidden`:** Wurde entfernt – früher weißer Screen bei Hydration-Problemen
 6. **`db:seed` vor Migration:** Verhindert JSON→SQLite-Import
 7. **Finale-Event:** Immer Datum `YYYY-10-19` speichern, UI zeigt „19.–29. Okt"
+8. **Video-Upload schlägt mit 413 fehl:** In Nginx fehlt `client_max_body_size 0;` für `/api/uploads/`
+9. **Videos nach Deploy weg:** `public/uploads/videos/` liegt außerhalb von Git – beim Serverumzug mitkopieren und ins Backup aufnehmen
+10. **`SITE_PASSWORD` unquotiert:** `#` startet einen Kommentar → Wert leer, es gilt still das Standardpasswort
+11. **Neue öffentliche Route:** Muss in `src/middleware.ts` freigeschaltet werden, sonst Redirect auf `/login`
 
 ---
 

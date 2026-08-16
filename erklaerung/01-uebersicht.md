@@ -7,7 +7,7 @@ Eine Präsentations-Website für den WG-Abschlusszeitraum **„Monat der offenen
 Besucher können:
 
 - Events im Kalender ansehen und Details öffnen
-- YouTube-Links öffnen
+- Event-Videos direkt auf der Seite abspielen
 - sich zu Events anmelden
 - Bier zählen (wenn aktiv)
 - am WG-Quiz teilnehmen
@@ -48,9 +48,10 @@ Website WG/
 
 | URL | Zweck |
 |-----|--------|
+| `/login` | Besucher-Anmeldung für die gesamte Website |
 | `/` | Startseite mit Kalender, Counter, Quiz, Awards |
 | `/admin/login` | Admin-Login |
 | `/admin` | Dashboard (Events, Bier, Gäste, Quiz, Awards) |
 | `/api/...` | Backend-Endpunkte |
 
-Der Schutz von `/admin/*` (außer Login) erfolgt in `src/middleware.ts`.
+`src/middleware.ts` sperrt die komplette Website hinter der Besucher-Anmeldung (Ausnahmen: die beiden Login-Seiten und die Auth-Endpunkte) und schützt `/admin/*` zusätzlich mit der Admin-Session.

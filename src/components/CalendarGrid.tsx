@@ -50,8 +50,8 @@ export function CalendarGrid({
           maxWidth={640}
           sx={{ whiteSpace: "pre-line" }}
         >
-          {`Die einmalige WG-Verabschiedung
-Vom 26.09.26 bis zum 18.10.26 erwarten euch zahlreiche Events um nochmal alle legendären Momente der Wg zu erleben.
+          {`Die vierundzwanzigmalige WG-Verabschiedung
+Vom 26.09.26 bis zum 18.10.26 erwarten euch zahlreiche Events, um die legendären WG-Momente wiederaufleben zu lassen und viele neue zu kreieren.
 Jeder ist jederzeit herzlich willkommen.`}
         </Typography>
 

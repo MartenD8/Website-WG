@@ -18,6 +18,8 @@ Pfad im Code: `src/lib/db.ts` (`DB_PATH`).
 
 Statische Inhalte (Quizfragen, Award-Liste) stehen **nicht** in der DB, sondern im Code unter `src/data/`.
 
+Hochgeladene Event-Videos liegen als Dateien unter `public/uploads/videos/`. In der Datenbank steht nur der Pfad (`events.video_path`). Der Ordner ist gitignored und muss separat gesichert werden.
+
 ---
 
 ## Was steckt in der Datenbank?
@@ -59,6 +61,8 @@ Sessions: JWT-Cookie `event_admin_session` (httpOnly).
 
 ```bash
 cp data/wg.db /pfad/zum/backup/wg-$(date +%F).db
+# Hochgeladene Videos liegen außerhalb der Datenbank:
+cp -r public/uploads/videos /pfad/zum/backup/videos-$(date +%F)
 ```
 
 **Restore:** Datei zurückkopieren und App neu starten (`pm2 restart …`).

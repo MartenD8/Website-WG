@@ -18,11 +18,11 @@ export const metadata: Metadata = {
     template: "%s | Monat der offenen Tür",
   },
   description:
-    "Die einmalige WG-Verabschiedung – vom 26.09.26 bis zum 18.10.26 erwarten euch zahlreiche Events.",
+    "Die vierundzwanzigmalige WG-Verabschiedung – vom 26.09.26 bis zum 18.10.26 erwarten euch zahlreiche Events.",
   openGraph: {
     title: "Monat der offenen Tür",
     description:
-      "Die einmalige WG-Verabschiedung – zahlreiche Events, jeder ist jederzeit herzlich willkommen.",
+      "Die vierundzwanzigmalige WG-Verabschiedung – zahlreiche Events, jeder ist jederzeit herzlich willkommen.",
     type: "website",
     locale: "de_DE",
   },

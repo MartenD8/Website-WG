@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       title: data.title,
       description: data.description,
       explorationLevel: data.explorationLevel as ExplorationLevel,
-      youtubeUrl: data.youtubeUrl ?? null,
+      videoPath: data.videoPath ?? null,
       previewImage: data.previewImage ?? null,
       isActive: data.isActive ?? true,
       beerCounterEnabled: data.beerCounterEnabled ?? false,

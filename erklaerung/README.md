@@ -22,6 +22,8 @@ npm run db:seed    # optional: Beispieldaten
 npm run dev        # http://localhost:3000
 ```
 
+Besucher-Login: `/login` · Benutzer `HasselWG`, Passwort `#RettetXoro` (änderbar über `SITE_USERNAME` / `SITE_PASSWORD`)
+
 Admin: `/admin` · Login über `.env.local` (`ADMIN_USERNAME` / `ADMIN_PASSWORD`)
 
 Ausführliche Deploy-Hinweise stehen weiterhin in der Root-Datei [`README.md`](../README.md).

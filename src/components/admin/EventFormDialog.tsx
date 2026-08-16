@@ -1,10 +1,11 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Box,
   Button,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -12,6 +13,7 @@ import {
   FormControl,
   FormControlLabel,
   InputLabel,
+  LinearProgress,
   MenuItem,
   Select,
   Stack,
@@ -19,16 +21,63 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
 import type { Event, ExplorationLevel } from "@/types";
 import { EXPLORATION_LABELS } from "@/types";
 import { getSelectableCalendarDates, getCalendarYear, formatDateOptionLabel } from "@/lib/calendar";
+import {
+  VIDEO_ACCEPT_ATTRIBUTE,
+  formatFileSize,
+  isAllowedVideoMimeType,
+} from "@/lib/video";
+
+/**
+ * Uploads the file as a raw body so the server can stream it to disk.
+ * XHR is used instead of fetch because it reports upload progress.
+ */
+function uploadVideo(
+  file: File,
+  onProgress: (percent: number) => void
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/uploads/video");
+    xhr.setRequestHeader("Content-Type", file.type);
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
+
+    xhr.onload = () => {
+      let payload: { videoPath?: string; error?: string } = {};
+      try {
+        payload = JSON.parse(xhr.responseText) as typeof payload;
+      } catch {
+        payload = {};
+      }
+      if (xhr.status >= 200 && xhr.status < 300 && payload.videoPath) {
+        resolve(payload.videoPath);
+      } else {
+        reject(new Error(payload.error || "Upload fehlgeschlagen"));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error("Netzwerkfehler beim Upload"));
+    xhr.onabort = () => reject(new Error("Upload abgebrochen"));
+
+    xhr.send(file);
+  });
+}
 
 export interface EventFormValues {
   date: string;
   title: string;
   description: string;
   explorationLevel: ExplorationLevel;
-  youtubeUrl: string;
+  videoPath: string | null;
   previewImage: string;
   isActive: boolean;
   beerCounterEnabled: boolean;
@@ -48,7 +97,7 @@ function toValues(event?: Event | null): EventFormValues {
     title: event?.title ?? "",
     description: event?.description ?? "",
     explorationLevel: (event?.explorationLevel ?? 1) as ExplorationLevel,
-    youtubeUrl: event?.youtubeUrl ?? "",
+    videoPath: event?.videoPath ?? null,
     previewImage: event?.previewImage ?? "",
     isActive: event?.isActive ?? true,
     beerCounterEnabled: event?.beerCounterEnabled ?? false,
@@ -66,11 +115,17 @@ export function EventFormDialog({
   const [values, setValues] = useState<EventFormValues>(toValues(initial));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadInfo, setUploadInfo] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (open) {
       setValues(toValues(initial));
       setError(null);
+      setUploadInfo(null);
+      setUploadProgress(0);
     }
   }, [open, initial]);
 
@@ -78,6 +133,63 @@ export function EventFormDialog({
   const dateOptions = calendarDates.filter(
     (d) => d === values.date || !existingDates.includes(d)
   );
+
+  /** Remove a freshly uploaded file that never made it into the database. */
+  async function discardUnsavedVideo(videoPath: string | null): Promise<void> {
+    if (!videoPath || videoPath === initial?.videoPath) return;
+    try {
+      await fetch("/api/uploads/video", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ videoPath }),
+      });
+    } catch {
+      // Orphaned file is acceptable – never block the dialog on cleanup
+    }
+  }
+
+  async function handleVideoChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setError(null);
+
+    if (!isAllowedVideoMimeType(file.type)) {
+      setError("Nur MP4- und WebM-Videos sind erlaubt");
+      return;
+    }
+
+    const replaced = values.videoPath;
+    setUploading(true);
+    setUploadProgress(0);
+    setUploadInfo(`${file.name} · ${formatFileSize(file.size)}`);
+    try {
+      const videoPath = await uploadVideo(file, setUploadProgress);
+      setValues((v) => ({ ...v, videoPath }));
+      await discardUnsavedVideo(replaced);
+    } catch (uploadError) {
+      setError(
+        uploadError instanceof Error
+          ? uploadError.message
+          : "Upload fehlgeschlagen"
+      );
+    } finally {
+      setUploading(false);
+      setUploadInfo(null);
+    }
+  }
+
+  async function handleVideoRemove() {
+    const current = values.videoPath;
+    setValues((v) => ({ ...v, videoPath: null }));
+    await discardUnsavedVideo(current);
+  }
+
+  async function handleCancel() {
+    await discardUnsavedVideo(values.videoPath);
+    onClose();
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -89,7 +201,7 @@ export function EventFormDialog({
       title: values.title,
       description: values.description,
       explorationLevel: values.explorationLevel,
-      youtubeUrl: values.youtubeUrl.trim() || null,
+      videoPath: values.videoPath,
       previewImage: values.previewImage.trim() || null,
       isActive: values.isActive,
       beerCounterEnabled: values.beerCounterEnabled,
@@ -119,7 +231,12 @@ export function EventFormDialog({
   }
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog
+      open={open}
+      onClose={() => void handleCancel()}
+      fullWidth
+      maxWidth="sm"
+    >
       <DialogTitle>
         {isEdit ? "Event bearbeiten" : "Neues Event anlegen"}
       </DialogTitle>
@@ -190,20 +307,104 @@ export function EventFormDialog({
               </Select>
             </FormControl>
 
-            <TextField
-              label="YouTube-Link"
-              fullWidth
-              placeholder="https://www.youtube.com/watch?v=…"
-              value={values.youtubeUrl}
-              onChange={(e) =>
-                setValues((v) => ({ ...v, youtubeUrl: e.target.value }))
-              }
-            />
+            <Box>
+              <Typography variant="subtitle2" gutterBottom>
+                Video
+              </Typography>
+
+              {values.videoPath ? (
+                <Stack spacing={1.5}>
+                  <Box
+                    component="video"
+                    src={values.videoPath}
+                    controls
+                    preload="metadata"
+                    sx={{
+                      width: "100%",
+                      maxHeight: 260,
+                      borderRadius: 2,
+                      bgcolor: "common.black",
+                    }}
+                  />
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    <Button
+                      variant="outlined"
+                      startIcon={<UploadFileOutlinedIcon />}
+                      disabled={uploading}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      Video ersetzen
+                    </Button>
+                    <Button
+                      variant="text"
+                      color="error"
+                      startIcon={<DeleteOutlineIcon />}
+                      disabled={uploading}
+                      onClick={() => void handleVideoRemove()}
+                    >
+                      Video entfernen
+                    </Button>
+                  </Stack>
+                </Stack>
+              ) : (
+                <Button
+                  variant="outlined"
+                  startIcon={
+                    uploading ? (
+                      <CircularProgress size={18} color="inherit" />
+                    ) : (
+                      <UploadFileOutlinedIcon />
+                    )
+                  }
+                  disabled={uploading}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {uploading ? "Wird hochgeladen…" : "Video hochladen"}
+                </Button>
+              )}
+
+              {uploading && (
+                <Box sx={{ mt: 1.5 }}>
+                  <LinearProgress
+                    variant={
+                      uploadProgress > 0 ? "determinate" : "indeterminate"
+                    }
+                    value={uploadProgress}
+                    sx={{ height: 8, borderRadius: 999 }}
+                  />
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ mt: 0.5, display: "block" }}
+                  >
+                    {uploadProgress}% hochgeladen
+                    {uploadInfo ? ` · ${uploadInfo}` : ""}
+                  </Typography>
+                </Box>
+              )}
+
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mt: 1, display: "block" }}
+              >
+                MP4 oder WebM, keine Größenbeschränkung. Große Dateien brauchen
+                entsprechend lange – Fenster währenddessen offen lassen.
+              </Typography>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={VIDEO_ACCEPT_ATTRIBUTE}
+                hidden
+                onChange={(e) => void handleVideoChange(e)}
+              />
+            </Box>
 
             <TextField
               label="Vorschaubild-URL (optional)"
               fullWidth
-              helperText="Leer lassen, um das YouTube-Thumbnail zu nutzen"
+              helperText="Wird als Startbild über dem Video angezeigt"
               value={values.previewImage}
               onChange={(e) =>
                 setValues((v) => ({ ...v, previewImage: e.target.value }))
@@ -253,10 +454,18 @@ export function EventFormDialog({
           </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={onClose} color="inherit" disabled={saving}>
+          <Button
+            onClick={() => void handleCancel()}
+            color="inherit"
+            disabled={saving || uploading}
+          >
             Abbrechen
           </Button>
-          <Button type="submit" variant="contained" disabled={saving || !values.date}>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={saving || uploading || !values.date}
+          >
             {saving ? "Speichern…" : "Speichern"}
           </Button>
         </DialogActions>

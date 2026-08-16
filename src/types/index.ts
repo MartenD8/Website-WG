@@ -8,7 +8,8 @@ export interface Event {
   title: string;
   description: string;
   explorationLevel: ExplorationLevel;
-  youtubeUrl: string | null;
+  /** Public path of an uploaded video, e.g. "/uploads/videos/<id>.mp4" */
+  videoPath: string | null;
   previewImage: string | null;
   isActive: boolean;
   /** When true, visitors can submit beer counts for this day */
@@ -22,7 +23,7 @@ export interface EventInput {
   title: string;
   description: string;
   explorationLevel: ExplorationLevel;
-  youtubeUrl?: string | null;
+  videoPath?: string | null;
   previewImage?: string | null;
   isActive?: boolean;
   beerCounterEnabled?: boolean;

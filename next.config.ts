@@ -2,16 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "img.youtube.com",
-      },
-      {
-        protocol: "https",
-        hostname: "i.ytimg.com",
-      },
-    ],
+    // Preview images are admin-entered URLs, videos are served from /public.
+    remotePatterns: [{ protocol: "https", hostname: "**" }],
   },
 };
 

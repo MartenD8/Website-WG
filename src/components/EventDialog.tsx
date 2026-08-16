@@ -16,13 +16,13 @@ import {
   useTheme,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import type { CalendarDay } from "@/lib/calendar";
-import { formatDisplayDate, youtubeThumbnail } from "@/lib/calendar";
+import { formatDisplayDate } from "@/lib/calendar";
 import { ExplorationBadge } from "@/components/ExplorationBadge";
 import { BeerCheckInForm } from "@/components/BeerCheckInForm";
 import { EventRsvpForm } from "@/components/EventRsvpForm";
+import { EventVideoPlayer } from "@/components/EventVideoPlayer";
 import type { BeerStats, ExplorationLevel } from "@/types";
 
 interface EventDialogProps {
@@ -42,8 +42,7 @@ export function EventDialog({
   const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const event = day?.event;
   const hasEvent = Boolean(day?.hasEvent && event);
-  const thumb =
-    event?.previewImage || youtubeThumbnail(event?.youtubeUrl) || null;
+  const previewImage = event?.previewImage || null;
   const showBeerForm = Boolean(
     hasEvent && event?.beerCounterEnabled && event?.id
   );
@@ -61,6 +60,7 @@ export function EventDialog({
     >
       <DialogTitle
         id="event-dialog-title"
+        component="div"
         sx={{
           pr: 6,
           pb: 1,
@@ -94,26 +94,34 @@ export function EventDialog({
 
             {hasEvent && event ? (
               <>
-                {thumb && (
-                  <Box
-                    sx={{
-                      position: "relative",
-                      width: "100%",
-                      aspectRatio: "16 / 9",
-                      borderRadius: 3,
-                      overflow: "hidden",
-                      bgcolor: "action.hover",
-                    }}
-                  >
-                    <Image
-                      src={thumb}
-                      alt={`Vorschau: ${event.title}`}
-                      fill
-                      sizes="(max-width: 600px) 100vw, 560px"
-                      style={{ objectFit: "cover" }}
-                      unoptimized={thumb.startsWith("/")}
-                    />
-                  </Box>
+                {event.videoPath ? (
+                  <EventVideoPlayer
+                    src={event.videoPath}
+                    poster={previewImage}
+                    title={event.title}
+                  />
+                ) : (
+                  previewImage && (
+                    <Box
+                      sx={{
+                        position: "relative",
+                        width: "100%",
+                        aspectRatio: "16 / 9",
+                        borderRadius: 3,
+                        overflow: "hidden",
+                        bgcolor: "action.hover",
+                      }}
+                    >
+                      <Image
+                        src={previewImage}
+                        alt={`Vorschau: ${event.title}`}
+                        fill
+                        sizes="(max-width: 600px) 100vw, 560px"
+                        style={{ objectFit: "cover" }}
+                        unoptimized={previewImage.startsWith("/")}
+                      />
+                    </Box>
+                  )
                 )}
 
                 <Box>
@@ -162,18 +170,6 @@ export function EventDialog({
         <Button onClick={onClose} color="inherit">
           Schließen
         </Button>
-        {hasEvent && event?.youtubeUrl && (
-          <Button
-            variant="contained"
-            color="primary"
-            endIcon={<OpenInNewIcon />}
-            href={event.youtubeUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            YouTube öffnen
-          </Button>
-        )}
       </DialogActions>
     </Dialog>
   );

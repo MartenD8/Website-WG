@@ -44,6 +44,7 @@ Praktische Übersicht für Textkorrekturen, neue Inhalte und Feature-Anpassungen
 | Startseiten-Layout / Grid | `src/components/CalendarGrid.tsx` | Banner, Buttons, Kacheln, Dialoge |
 | Event-Kachel | `src/components/EventCard.tsx` | Tageskarte |
 | Event-Detail | `src/components/EventDialog.tsx` | Modal inkl. Anmeldung + Bier |
+| Video-Player | `src/components/EventVideoPlayer.tsx` | Vorschau anklicken → Video startet |
 | Bier-Banner | `src/components/BeerCounterBanner.tsx` | Counter oben |
 | Bier-Formular | `src/components/BeerCheckInForm.tsx` | Check-in |
 | Event-Anmeldung | `src/components/EventRsvpForm.tsx` | RSVP in Detailansicht |
@@ -66,7 +67,8 @@ Praktische Übersicht für Textkorrekturen, neue Inhalte und Feature-Anpassungen
 | Quiz-Auswertung | `src/components/admin/AdminQuizOverview.tsx` |
 | Awards-Auswertung | `src/components/admin/AdminAwardsOverview.tsx` |
 | Admin-Seite | `src/app/admin/page.tsx` |
-| Login-Seite | `src/app/admin/login/page.tsx` |
+| Login-Seite (Admin) | `src/app/admin/login/page.tsx` |
+| Login-Seite (Besucher) | `src/app/login/page.tsx` |
 
 ---
 
@@ -80,6 +82,7 @@ Praktische Übersicht für Textkorrekturen, neue Inhalte und Feature-Anpassungen
 | `quiz`, `quiz/results`, `quiz/results/[id]` | Quiz public + Admin |
 | `awards`, `awards/results` | Awards public + Admin |
 | `rsvp`, `rsvp/[id]`, `rsvp/overview` | Event-Anmeldungen |
+| `uploads/video` | Video-Upload / -Löschung (Admin) |
 
 ---
 
@@ -88,10 +91,13 @@ Praktische Übersicht für Textkorrekturen, neue Inhalte und Feature-Anpassungen
 | Thema | Datei |
 |-------|--------|
 | Lesen/Schreiben aller Daten | `src/lib/db.ts` |
+| Video-Grenzwerte (Typ, Größe, Pfadmuster) | `src/lib/video.ts` |
+| Video-Dateien speichern/löschen | `src/lib/uploads.ts` |
 | Typen / Labels / Kalender-Konstanten | `src/types/index.ts` |
 | Eingabe-Validierung (Zod) | `src/lib/validation.ts` |
 | Session / JWT | `src/lib/session.ts`, `src/lib/auth.ts` |
-| Admin-Routenschutz | `src/middleware.ts` |
+| Besucher-Zugangsdaten | `src/lib/siteAccess.ts` |
+| Routenschutz (Besucher + Admin) | `src/middleware.ts` |
 | Theme / Design | `src/theme/theme.ts`, `src/theme/ThemeRegistry.tsx` |
 
 ---

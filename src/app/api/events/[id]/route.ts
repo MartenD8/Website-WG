@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { deleteEvent, getEventById, updateEvent } from "@/lib/db";
 import { AuthError, getSession, requireSession } from "@/lib/auth";
+import { deleteVideoFile } from "@/lib/uploads";
 import { eventSchema } from "@/lib/validation";
 import type { ExplorationLevel } from "@/types";
 
@@ -53,12 +54,13 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     }
 
     const data = parsed.data;
+    const previous = getEventById(eventId);
     const event = updateEvent(eventId, {
       date: data.date,
       title: data.title,
       description: data.description,
       explorationLevel: data.explorationLevel as ExplorationLevel,
-      youtubeUrl: data.youtubeUrl ?? null,
+      videoPath: data.videoPath ?? null,
       previewImage: data.previewImage ?? null,
       isActive: data.isActive ?? true,
       beerCounterEnabled: data.beerCounterEnabled ?? false,
@@ -66,6 +68,10 @@ export async function PUT(request: NextRequest, context: RouteContext) {
 
     if (!event) {
       return NextResponse.json({ error: "Event nicht gefunden" }, { status: 404 });
+    }
+
+    if (previous?.videoPath && previous.videoPath !== event.videoPath) {
+      await deleteVideoFile(previous.videoPath);
     }
 
     return NextResponse.json({ event });
@@ -100,10 +106,13 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Ungültige ID" }, { status: 400 });
     }
 
+    const existing = getEventById(eventId);
     const ok = deleteEvent(eventId);
     if (!ok) {
       return NextResponse.json({ error: "Event nicht gefunden" }, { status: 404 });
     }
+
+    await deleteVideoFile(existing?.videoPath);
 
     return NextResponse.json({ success: true });
   } catch (error) {

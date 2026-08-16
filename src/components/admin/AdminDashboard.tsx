@@ -22,7 +22,7 @@ import {
 import AddIcon from "@mui/icons-material/Add";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import type { Event } from "@/types";
 import { formatDisplayDate, isFinaleRangeDate } from "@/lib/calendar";
 import { ExplorationBadge } from "@/components/ExplorationBadge";
@@ -61,7 +61,7 @@ export function AdminDashboard({ initialEvents, username }: AdminDashboardProps)
         title: event.title,
         description: event.description,
         explorationLevel: event.explorationLevel,
-        youtubeUrl: event.youtubeUrl,
+        videoPath: event.videoPath,
         previewImage: event.previewImage,
         isActive: !event.isActive,
         beerCounterEnabled: event.beerCounterEnabled,
@@ -92,7 +92,7 @@ export function AdminDashboard({ initialEvents, username }: AdminDashboardProps)
         title: event.title,
         description: event.description,
         explorationLevel: event.explorationLevel,
-        youtubeUrl: event.youtubeUrl,
+        videoPath: event.videoPath,
         previewImage: event.previewImage,
         isActive: event.isActive,
         beerCounterEnabled: !event.beerCounterEnabled,
@@ -284,16 +284,16 @@ export function AdminDashboard({ initialEvents, username }: AdminDashboardProps)
                         <EditOutlinedIcon />
                       </IconButton>
                     </Tooltip>
-                    {event.youtubeUrl && (
-                      <Tooltip title="YouTube öffnen">
+                    {event.videoPath && (
+                      <Tooltip title="Video öffnen">
                         <IconButton
-                          aria-label="YouTube"
-                          href={event.youtubeUrl}
+                          aria-label="Video"
+                          href={event.videoPath}
                           target="_blank"
                           rel="noopener noreferrer"
                           component="a"
                         >
-                          <OpenInNewIcon />
+                          <PlayCircleOutlineIcon />
                         </IconButton>
                       </Tooltip>
                     )}
