@@ -33,6 +33,26 @@ import {
 } from "@/lib/video";
 
 /**
+ * Errors without a JSON body come from the web server in front of the app,
+ * so the status code is the only clue – name it instead of hiding it.
+ */
+function describeUploadFailure(status: number): string {
+  if (status === 413) {
+    return "Der Webserver hat die Datei als zu groß abgewiesen (413). In der Nginx-Konfiguration muss client_max_body_size erhöht werden.";
+  }
+  if (status === 401) {
+    return "Sitzung abgelaufen – bitte neu anmelden und erneut versuchen";
+  }
+  if (status === 502 || status === 504) {
+    return `Der Webserver hat die Verbindung zur Anwendung abgebrochen (${status})`;
+  }
+  if (status === 0) {
+    return "Verbindung während des Uploads unterbrochen";
+  }
+  return `Upload fehlgeschlagen (HTTP ${status})`;
+}
+
+/**
  * Uploads the file as a raw body so the server can stream it to disk.
  * XHR is used instead of fetch because it reports upload progress.
  */
@@ -56,12 +76,13 @@ function uploadVideo(
       try {
         payload = JSON.parse(xhr.responseText) as typeof payload;
       } catch {
+        // Non-JSON answers come from the reverse proxy, not from the app.
         payload = {};
       }
       if (xhr.status >= 200 && xhr.status < 300 && payload.videoPath) {
         resolve(payload.videoPath);
       } else {
-        reject(new Error(payload.error || "Upload fehlgeschlagen"));
+        reject(new Error(payload.error || describeUploadFailure(xhr.status)));
       }
     };
 
