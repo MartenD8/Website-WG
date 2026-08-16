@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import {
   Box,
   Button,
@@ -42,7 +41,6 @@ export function EventDialog({
   const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const event = day?.event;
   const hasEvent = Boolean(day?.hasEvent && event);
-  const previewImage = event?.previewImage || null;
   const showBeerForm = Boolean(
     hasEvent && event?.beerCounterEnabled && event?.id
   );
@@ -94,34 +92,8 @@ export function EventDialog({
 
             {hasEvent && event ? (
               <>
-                {event.videoPath ? (
-                  <EventVideoPlayer
-                    src={event.videoPath}
-                    poster={previewImage}
-                    title={event.title}
-                  />
-                ) : (
-                  previewImage && (
-                    <Box
-                      sx={{
-                        position: "relative",
-                        width: "100%",
-                        aspectRatio: "16 / 9",
-                        borderRadius: 3,
-                        overflow: "hidden",
-                        bgcolor: "action.hover",
-                      }}
-                    >
-                      <Image
-                        src={previewImage}
-                        alt={`Vorschau: ${event.title}`}
-                        fill
-                        sizes="(max-width: 600px) 100vw, 560px"
-                        style={{ objectFit: "cover" }}
-                        unoptimized={previewImage.startsWith("/")}
-                      />
-                    </Box>
-                  )
+                {event.videoPath && (
+                  <EventVideoPlayer src={event.videoPath} title={event.title} />
                 )}
 
                 <Box>

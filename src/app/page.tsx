@@ -32,7 +32,7 @@ export default function HomePage() {
         }}
       >
         <Typography variant="body2" color="text.secondary">
-          Monat der offenen Tür · {year}
+          Monat der offenen Tür · 2026 · Marten Dürre
         </Typography>
       </Box>
     </Box>

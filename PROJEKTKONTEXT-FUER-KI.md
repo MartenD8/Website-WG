@@ -150,7 +150,6 @@ interface Event {
   description: string;
   explorationLevel: ExplorationLevel;
   videoPath: string | null;    // z. B. "/uploads/videos/<uuid>.mp4"
-  previewImage: string | null;
   isActive: boolean;
   beerCounterEnabled: boolean;
   createdAt: string;           // ISO datetime
@@ -163,7 +162,6 @@ interface EventInput {
   description: string;
   explorationLevel: ExplorationLevel;
   videoPath?: string | null;
-  previewImage?: string | null;
   isActive?: boolean;
   beerCounterEnabled?: boolean;
 }
@@ -283,7 +281,6 @@ interface CalendarDay {
 |---------------|-----------------|
 | `exploration_level` | `explorationLevel` |
 | `video_path` | `videoPath` |
-| `preview_image` | `previewImage` |
 | `is_active` | `isActive` (INTEGER 0/1 → boolean) |
 | `beer_counter_enabled` | `beerCounterEnabled` |
 | `event_id` | `eventId` |
@@ -456,7 +453,7 @@ Body (POST/PUT): `EventInput` (siehe Zod `eventSchema`)
 
 | Schema | Felder / Regeln |
 |--------|-----------------|
-| `eventSchema` | `date` (YYYY-MM-DD), `title` (1–200), `description` (max 5000), `explorationLevel` (1–5), `videoPath` (muss `VIDEO_PATH_PATTERN` entsprechen), `previewImage`, `isActive`, `beerCounterEnabled` |
+| `eventSchema` | `date` (YYYY-MM-DD), `title` (1–200), `description` (max 5000), `explorationLevel` (1–5), `videoPath` (muss `VIDEO_PATH_PATTERN` entsprechen), `isActive`, `beerCounterEnabled` |
 | `videoDeleteSchema` | `videoPath` (Pfad aus dem Upload) |
 | `beerEntrySchema` | `eventId` (positive int), `name` (1–40), `beers` (1–50, int) |
 | `beerEntryUpdateSchema` | `name?`, `beers?` |
@@ -572,7 +569,7 @@ class AuthError extends Error
 | `CalendarGrid` | `CalendarGrid.tsx` | Startseite: Banner, Quiz/Awards-Buttons, Kacheln |
 | `EventCard` | `EventCard.tsx` | Tageskachel |
 | `EventDialog` | `EventDialog.tsx` | Event-Modal (Video, RSVP, Bier) |
-| `EventVideoPlayer` | `EventVideoPlayer.tsx` | Vorschaubild → Klick → `<video controls>` |
+| `EventVideoPlayer` | `EventVideoPlayer.tsx` | Standbild aus dem Video (`#t=0.1`) → Klick → `<video controls>`; Download und Bild-in-Bild sind deaktiviert |
 | `BeerCounterBanner` | `BeerCounterBanner.tsx` | „Anzahl vergenussverferkelter Bier“ |
 | `BeerCheckInForm` | `BeerCheckInForm.tsx` | Bier-Formular im Modal |
 | `EventRsvpForm` | `EventRsvpForm.tsx` | Anmeldung im Modal |

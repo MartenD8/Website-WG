@@ -99,7 +99,6 @@ export interface EventFormValues {
   description: string;
   explorationLevel: ExplorationLevel;
   videoPath: string | null;
-  previewImage: string;
   isActive: boolean;
   beerCounterEnabled: boolean;
 }
@@ -119,7 +118,6 @@ function toValues(event?: Event | null): EventFormValues {
     description: event?.description ?? "",
     explorationLevel: (event?.explorationLevel ?? 1) as ExplorationLevel,
     videoPath: event?.videoPath ?? null,
-    previewImage: event?.previewImage ?? "",
     isActive: event?.isActive ?? true,
     beerCounterEnabled: event?.beerCounterEnabled ?? false,
   };
@@ -223,7 +221,6 @@ export function EventFormDialog({
       description: values.description,
       explorationLevel: values.explorationLevel,
       videoPath: values.videoPath,
-      previewImage: values.previewImage.trim() || null,
       isActive: values.isActive,
       beerCounterEnabled: values.beerCounterEnabled,
     };
@@ -421,16 +418,6 @@ export function EventFormDialog({
                 onChange={(e) => void handleVideoChange(e)}
               />
             </Box>
-
-            <TextField
-              label="Vorschaubild-URL (optional)"
-              fullWidth
-              helperText="Wird als Startbild über dem Video angezeigt"
-              value={values.previewImage}
-              onChange={(e) =>
-                setValues((v) => ({ ...v, previewImage: e.target.value }))
-              }
-            />
 
             <FormControlLabel
               control={

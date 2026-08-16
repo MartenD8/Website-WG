@@ -25,7 +25,7 @@ Produktionsreife Präsentationswebsite für einen Event-Kalender (25.09. – 18.
 
 - Login mit Benutzername/Passwort (kein öffentliches Registrieren)
 - Dashboard mit CRUD für Events
-- Explorationsstufe, Video-Upload (MP4/WebM), Beschreibung, Vorschaubild
+- Explorationsstufe, Video-Upload (MP4/WebM), Beschreibung
 - Aktiv/Inaktiv-Schalter (sofort auf der Startseite sichtbar)
 
 ## Technologie

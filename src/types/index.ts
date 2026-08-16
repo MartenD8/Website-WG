@@ -10,7 +10,6 @@ export interface Event {
   explorationLevel: ExplorationLevel;
   /** Public path of an uploaded video, e.g. "/uploads/videos/<id>.mp4" */
   videoPath: string | null;
-  previewImage: string | null;
   isActive: boolean;
   /** When true, visitors can submit beer counts for this day */
   beerCounterEnabled: boolean;
@@ -24,7 +23,6 @@ export interface EventInput {
   description: string;
   explorationLevel: ExplorationLevel;
   videoPath?: string | null;
-  previewImage?: string | null;
   isActive?: boolean;
   beerCounterEnabled?: boolean;
 }

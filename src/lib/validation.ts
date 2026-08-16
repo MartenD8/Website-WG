@@ -1,11 +1,6 @@
 import { z } from "zod";
 import { VIDEO_PATH_PATTERN } from "@/lib/video";
 
-const optionalUrl = z
-  .union([z.string().url(), z.literal(""), z.null()])
-  .optional()
-  .transform((v) => (v === "" || v === undefined ? null : v));
-
 /** Only paths produced by the upload route are accepted. */
 const optionalVideoPath = z
   .union([z.string(), z.null()])
@@ -35,7 +30,6 @@ export const eventSchema = z.object({
     .min(1)
     .max(5) as z.ZodType<1 | 2 | 3 | 4 | 5>,
   videoPath: optionalVideoPath,
-  previewImage: optionalUrl,
   isActive: z.boolean().optional().default(true),
   beerCounterEnabled: z.boolean().optional().default(false),
 });

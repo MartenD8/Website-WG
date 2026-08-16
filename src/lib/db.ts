@@ -72,7 +72,6 @@ function initSchema(database: DatabaseSync): void {
       description TEXT NOT NULL DEFAULT '',
       exploration_level INTEGER NOT NULL DEFAULT 1,
       video_path TEXT,
-      preview_image TEXT,
       is_active INTEGER NOT NULL DEFAULT 1,
       beer_counter_enabled INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL,
@@ -148,8 +147,8 @@ function migrateFromJsonIfNeeded(database: DatabaseSync): void {
 
     const insertEvent = database.prepare(
       `INSERT OR IGNORE INTO events
-       (id, date, title, description, exploration_level, video_path, preview_image, is_active, beer_counter_enabled, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       (id, date, title, description, exploration_level, video_path, is_active, beer_counter_enabled, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     );
     for (const e of raw.events ?? []) {
       insertEvent.run(
@@ -159,7 +158,6 @@ function migrateFromJsonIfNeeded(database: DatabaseSync): void {
         e.description,
         e.explorationLevel,
         null,
-        e.previewImage,
         e.isActive ? 1 : 0,
         e.beerCounterEnabled ? 1 : 0,
         e.createdAt,
@@ -240,7 +238,6 @@ function mapEvent(row: Record<string, unknown>): Event {
     description: row.description as string,
     explorationLevel: row.exploration_level as ExplorationLevel,
     videoPath: (row.video_path as string | null) ?? null,
-    previewImage: (row.preview_image as string | null) ?? null,
     isActive: Boolean(row.is_active),
     beerCounterEnabled: Boolean(row.beer_counter_enabled),
     createdAt: row.created_at as string,
@@ -291,8 +288,8 @@ export function createEvent(input: EventInput): Event {
     const result = getDb()
       .prepare(
         `INSERT INTO events
-         (date, title, description, exploration_level, video_path, preview_image, is_active, beer_counter_enabled, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         (date, title, description, exploration_level, video_path, is_active, beer_counter_enabled, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         input.date,
@@ -300,7 +297,6 @@ export function createEvent(input: EventInput): Event {
         input.description,
         input.explorationLevel,
         input.videoPath ?? null,
-        input.previewImage ?? null,
         input.isActive === false ? 0 : 1,
         input.beerCounterEnabled ? 1 : 0,
         stamp,
@@ -322,7 +318,7 @@ export function updateEvent(id: number, input: EventInput): Event | null {
       .prepare(
         `UPDATE events SET
           date = ?, title = ?, description = ?, exploration_level = ?,
-          video_path = ?, preview_image = ?, is_active = ?, beer_counter_enabled = ?,
+          video_path = ?, is_active = ?, beer_counter_enabled = ?,
           updated_at = ?
          WHERE id = ?`
       )
@@ -332,7 +328,6 @@ export function updateEvent(id: number, input: EventInput): Event | null {
         input.description,
         input.explorationLevel,
         input.videoPath ?? null,
-        input.previewImage ?? null,
         input.isActive === false ? 0 : 1,
         input.beerCounterEnabled ? 1 : 0,
         nowIso(),

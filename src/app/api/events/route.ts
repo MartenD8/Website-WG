@@ -40,7 +40,6 @@ export async function POST(request: NextRequest) {
       description: data.description,
       explorationLevel: data.explorationLevel as ExplorationLevel,
       videoPath: data.videoPath ?? null,
-      previewImage: data.previewImage ?? null,
       isActive: data.isActive ?? true,
       beerCounterEnabled: data.beerCounterEnabled ?? false,
     });

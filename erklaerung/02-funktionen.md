@@ -16,9 +16,10 @@
 
 - Eine Kachel pro Tag (26.09. – 18.10.) plus eine Abschluss-Kachel (19.10. – 29.10.)
 - Klick öffnet die Detailansicht (Modal)
-- Inhalte: Titel, Beschreibung, Explorationsstufe (Level), optional Vorschaubild und Video
+- Inhalte: Titel, Beschreibung, Explorationsstufe (Level), optional ein Video
 - Video: nur in der Detailansicht, nicht auf der Kachel – erst der Klick auf die Kachel zeigt es
-- Mit Vorschaubild startet das Video per Klick darauf, ohne Vorschaubild erscheint der Player direkt
+- Als Standbild dient das erste Bild des Videos selbst; ein Klick darauf startet die Wiedergabe
+- Herunterladen ist im Player deaktiviert (kein Download-Knopf, kein Rechtsklick-Menü)
 - In der Detailansicht: **Event-Anmeldung** (Name)
 
 ### Biercounter
@@ -57,7 +58,7 @@
 - Anlegen, Bearbeiten, Löschen
 - Aktiv/Inaktiv
 - Bier-Zähler an/aus
-- Felder: Datum, Titel, Beschreibung, Level, Video-Upload, Vorschaubild
+- Felder: Datum, Titel, Beschreibung, Level, Video-Upload
 - Video hochladen, ersetzen oder entfernen (MP4/WebM, keine Größenbeschränkung, mit Fortschrittsanzeige)
 
 ### Biercounter-Übersicht
