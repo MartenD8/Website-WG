@@ -14,6 +14,11 @@ export const VIDEO_EXTENSION_BY_MIME: Record<AllowedVideoMimeType, string> = {
   "video/webm": ".webm",
 };
 
+export const VIDEO_MIME_BY_EXTENSION: Record<string, AllowedVideoMimeType> = {
+  ".mp4": "video/mp4",
+  ".webm": "video/webm",
+};
+
 /** Only files written by the upload route are accepted as `videoPath`. */
 export const VIDEO_PATH_PATTERN = /^\/uploads\/videos\/[A-Za-z0-9_-]+\.(?:mp4|webm)$/;
 

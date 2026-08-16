@@ -42,10 +42,9 @@ Eine **Event-Kalender-Website** für die WG-Verabschiedung („Monat der offenen
 Website WG/
 ├── data/
 │   ├── wg.db                    # SQLite-Datenbank (gitignored, Laufzeit)
+│   ├── uploads/videos/          # Hochgeladene Event-Videos (gitignored)
 │   ├── store.json.migrated      # Alte JSON nach Migration (optional)
 │   └── .gitkeep
-├── public/
-│   └── uploads/videos/          # Hochgeladene Event-Videos (gitignored)
 ├── deploy/
 │   ├── ecosystem.config.cjs     # PM2-Konfiguration (App-Name: event-calendar)
 │   └── nginx*.conf              # Reverse Proxy
@@ -430,8 +429,18 @@ Body (POST/PUT): `EventInput` (siehe Zod `eventSchema`)
 - Erlaubt: `video/mp4`, `video/webm`
 - **Keine Größenbeschränkung** – der Body wird per Stream direkt auf die Platte geschrieben (konstanter Speicherbedarf). Deshalb **kein** `multipart/form-data`: `request.formData()` würde die komplette Datei in den RAM laden.
 - Client lädt per `XMLHttpRequest` hoch, um den Fortschritt anzuzeigen
-- Ablage: `public/uploads/videos/<uuid>.<ext>`, öffentlich unter `/uploads/videos/…`
+- Ablage: `data/uploads/videos/<uuid>.<ext>` – **nicht** unter `public/`
 - Beim Ersetzen/Löschen eines Events wird die alte Datei automatisch entfernt
+
+### Video-Auslieferung
+
+| Methode | Route | Auth | Beschreibung |
+|---------|-------|------|--------------|
+| GET | `/uploads/videos/[file]` | Gast | Streamt die Datei, beantwortet `Range` mit `206` |
+
+- Die Route existiert, weil Next.js `public/` **nur beim Build** einliest: zur Laufzeit dort abgelegte Dateien liefern 404. Uploads dürfen deshalb nie in `public/` landen.
+- `resolveVideoFile()` in `@/lib/uploads` sucht zuerst in `data/uploads/videos/`, dann im Altbestand `public/uploads/videos/`. Der Pfad in der DB bleibt unverändert `/uploads/videos/<uuid>.<ext>`.
+- Range-Antworten sind Pflicht: ohne sie kann der Browser die Länge von MP4s mit Metadaten am Dateiende nicht lesen und zeigt `0:00`.
 
 ### RSVP (Event-Anmeldung)
 
@@ -758,7 +767,8 @@ setBeerStats(data.stats);
 6. **`db:seed` vor Migration:** Verhindert JSON→SQLite-Import
 7. **Finale-Event:** Immer Datum `YYYY-10-19` speichern, UI zeigt „19.–29. Okt"
 8. **Video-Upload schlägt mit 413 fehl:** In Nginx fehlt `client_max_body_size 0;` für `/api/uploads/`
-9. **Videos nach Deploy weg:** `public/uploads/videos/` liegt außerhalb von Git – beim Serverumzug mitkopieren und ins Backup aufnehmen
+9. **Videos nach Deploy weg:** `data/uploads/videos/` liegt außerhalb von Git – beim Serverumzug mitkopieren und ins Backup aufnehmen
+9a. **Uploads niemals nach `public/` schreiben:** Next.js liest diesen Ordner nur beim Build ein. Zur Laufzeit dort abgelegte Dateien beantwortet der Server mit **404 und `Content-Type: text/html`**; der Player meldet dann `MEDIA_ELEMENT_ERROR: Format error` und Länge `NaN`, obwohl die Datei auf der Platte einwandfrei ist. Auslieferung läuft über `src/app/uploads/videos/[file]/route.ts`.
 10. **`SITE_PASSWORD` unquotiert:** `#` startet einen Kommentar → Wert leer, es gilt still das Standardpasswort
 11. **Neue öffentliche Route:** Muss in `src/middleware.ts` freigeschaltet werden, sonst Redirect auf `/login`
 12. **Upload-Route nie in den Middleware-Matcher aufnehmen:** Die Middleware schneidet große Request-Bodys ab (im Produktions-Build kamen von 200 MB nur 10 MB an, Antwort trotzdem 201). Deshalb ist `api/uploads` ausgenommen; die Route authentifiziert selbst. Zusätzlich vergleicht `saveVideoStream` die geschriebenen Bytes mit `Content-Length` und verwirft unvollständige Uploads (`INCOMPLETE_UPLOAD`).

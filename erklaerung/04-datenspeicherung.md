@@ -18,7 +18,9 @@ Pfad im Code: `src/lib/db.ts` (`DB_PATH`).
 
 Statische Inhalte (Quizfragen, Award-Liste) stehen **nicht** in der DB, sondern im Code unter `src/data/`.
 
-Hochgeladene Event-Videos liegen als Dateien unter `public/uploads/videos/`. In der Datenbank steht nur der Pfad (`events.video_path`). Der Ordner ist gitignored und muss separat gesichert werden.
+Hochgeladene Event-Videos liegen als Dateien unter `data/uploads/videos/`. In der Datenbank steht nur der Pfad (`events.video_path`). Der Ordner ist gitignored und muss separat gesichert werden.
+
+Sie liegen bewusst **nicht** in `public/`: Next.js liest diesen Ordner nur beim Build ein, sodass später hochgeladene Dateien mit 404 beantwortet würden. Ausgeliefert werden die Videos von `src/app/uploads/videos/[file]/route.ts`, das auch Teilabrufe (`Range`) beantwortet – nötig fürs Spulen und für die Längenanzeige. Videos aus der Zeit davor werden weiterhin aus `public/uploads/videos/` gelesen.
 
 ---
 
@@ -62,7 +64,7 @@ Sessions: JWT-Cookie `event_admin_session` (httpOnly).
 ```bash
 cp data/wg.db /pfad/zum/backup/wg-$(date +%F).db
 # Hochgeladene Videos liegen außerhalb der Datenbank:
-cp -r public/uploads/videos /pfad/zum/backup/videos-$(date +%F)
+cp -r data/uploads/videos /pfad/zum/backup/videos-$(date +%F)
 ```
 
 **Restore:** Datei zurückkopieren und App neu starten (`pm2 restart …`).

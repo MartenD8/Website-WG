@@ -7,12 +7,28 @@ import { pipeline } from "stream/promises";
 import type { ReadableStream as WebReadableStream } from "stream/web";
 import {
   VIDEO_EXTENSION_BY_MIME,
+  VIDEO_MIME_BY_EXTENSION,
   VIDEO_PUBLIC_BASE,
   isAllowedVideoMimeType,
   isManagedVideoPath,
 } from "@/lib/video";
+import type { AllowedVideoMimeType } from "@/lib/video";
 
+/**
+ * Uploads must not live in `public`: Next.js only serves files that were
+ * present in that folder when the app was built, so anything written at
+ * runtime would answer with 404. Videos are stored next to the database and
+ * handed out by the `/uploads/videos/[file]` route instead.
+ */
 const VIDEO_STORAGE_DIR = path.join(
+  process.cwd(),
+  "data",
+  "uploads",
+  "videos"
+);
+
+/** Videos uploaded before the move are still read from their old location. */
+const LEGACY_VIDEO_STORAGE_DIR = path.join(
   process.cwd(),
   "public",
   "uploads",
@@ -105,5 +121,47 @@ export async function deleteVideoFile(
   if (!isManagedVideoPath(videoPath)) return;
 
   const fileName = path.basename(videoPath as string);
-  await fsp.rm(path.join(VIDEO_STORAGE_DIR, fileName), { force: true });
+  await Promise.all([
+    fsp.rm(path.join(VIDEO_STORAGE_DIR, fileName), { force: true }),
+    fsp.rm(path.join(LEGACY_VIDEO_STORAGE_DIR, fileName), { force: true }),
+  ]);
+}
+
+export interface ResolvedVideoFile {
+  filePath: string;
+  size: number;
+  contentType: AllowedVideoMimeType;
+  lastModified: Date;
+}
+
+/**
+ * Locate an uploaded video by its file name. Only names produced by the
+ * upload route are accepted, which rules out path traversal.
+ */
+export async function resolveVideoFile(
+  fileName: string
+): Promise<ResolvedVideoFile | null> {
+  if (!isManagedVideoPath(`${VIDEO_PUBLIC_BASE}/${fileName}`)) return null;
+
+  const contentType = VIDEO_MIME_BY_EXTENSION[path.extname(fileName)];
+  if (!contentType) return null;
+
+  for (const dir of [VIDEO_STORAGE_DIR, LEGACY_VIDEO_STORAGE_DIR]) {
+    const filePath = path.join(dir, fileName);
+    try {
+      const stats = await fsp.stat(filePath);
+      if (stats.isFile()) {
+        return {
+          filePath,
+          size: stats.size,
+          contentType,
+          lastModified: stats.mtime,
+        };
+      }
+    } catch {
+      // Try the next location
+    }
+  }
+
+  return null;
 }
