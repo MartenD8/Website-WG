@@ -319,6 +319,8 @@ Zusätzlich: Uptime-Monitoring (UptimeRobot, Better Stack) auf `https://deine-do
 | Port 3000 belegt | In `ecosystem.config.cjs` anderen Port setzen und Nginx anpassen |
 | Nginx 502 | `pm2 status` – App läuft? `curl http://127.0.0.1:3000` |
 | Besucher-Passwort wird nicht angenommen | `SITE_PASSWORD` in `.env.local` ohne Anführungszeichen? `#` startet dort einen Kommentar |
+| Video-Upload bricht ab | Nginx: `client_max_body_size 0;` und `proxy_request_buffering off;` im **HTTPS**-Block? Ohne das kommt 413 |
+| Hochgeladenes Video ist abgeschnitten | `api/uploads` darf nicht im Matcher von `src/middleware.ts` stehen – sonst wird der Request-Body gekürzt |
 
 ## Lizenz
 

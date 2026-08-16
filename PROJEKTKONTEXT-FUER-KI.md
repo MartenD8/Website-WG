@@ -485,6 +485,7 @@ Es gibt **zwei getrennte Ebenen**: eine Besucher-Sperre für die gesamte Website
 | Pfad | Verhalten ohne Session |
 |------|------------------------|
 | `/login`, `/admin/login`, `/api/auth/*` | immer offen |
+| `/api/uploads/*` | **nicht im Matcher** – die Route prüft selbst per `requireSession()` |
 | `/admin/*` | Redirect auf `/admin/login` |
 | `/api/*` (übrige) | **401 JSON** statt Redirect |
 | alles andere inkl. `/uploads/videos/*` | Redirect auf `/login?next=…` |
@@ -760,6 +761,7 @@ setBeerStats(data.stats);
 9. **Videos nach Deploy weg:** `public/uploads/videos/` liegt außerhalb von Git – beim Serverumzug mitkopieren und ins Backup aufnehmen
 10. **`SITE_PASSWORD` unquotiert:** `#` startet einen Kommentar → Wert leer, es gilt still das Standardpasswort
 11. **Neue öffentliche Route:** Muss in `src/middleware.ts` freigeschaltet werden, sonst Redirect auf `/login`
+12. **Upload-Route nie in den Middleware-Matcher aufnehmen:** Die Middleware schneidet große Request-Bodys ab (im Produktions-Build kamen von 200 MB nur 10 MB an, Antwort trotzdem 201). Deshalb ist `api/uploads` ausgenommen; die Route authentifiziert selbst. Zusätzlich vergleicht `saveVideoStream` die geschriebenen Bytes mit `Content-Length` und verwirft unvollständige Uploads (`INCOMPLETE_UPLOAD`).
 
 ---
 

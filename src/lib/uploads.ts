@@ -20,7 +20,10 @@ const VIDEO_STORAGE_DIR = path.join(
 );
 
 /** Error codes thrown by this module – routes translate them into messages. */
-export type UploadErrorCode = "EMPTY_FILE" | "INVALID_FILE_TYPE";
+export type UploadErrorCode =
+  | "EMPTY_FILE"
+  | "INCOMPLETE_UPLOAD"
+  | "INVALID_FILE_TYPE";
 
 export class UploadError extends Error {
   constructor(public readonly code: UploadErrorCode) {
@@ -40,10 +43,14 @@ function ensureStorageDir(): void {
  *
  * The body is piped straight to the file system, so memory usage stays flat
  * regardless of the video size – uploads are intentionally not size capped.
+ *
+ * When the announced size is known the result is verified against it: a
+ * truncated body must never be stored as if it were a complete video.
  */
 export async function saveVideoStream(
   body: ReadableStream<Uint8Array>,
-  mimeType: string
+  mimeType: string,
+  expectedBytes?: number
 ): Promise<string> {
   if (!isAllowedVideoMimeType(mimeType)) {
     throw new UploadError("INVALID_FILE_TYPE");
@@ -71,6 +78,17 @@ export async function saveVideoStream(
 
     if (written === 0) {
       throw new UploadError("EMPTY_FILE");
+    }
+    if (
+      typeof expectedBytes === "number" &&
+      Number.isFinite(expectedBytes) &&
+      expectedBytes > 0 &&
+      written !== expectedBytes
+    ) {
+      console.error(
+        `Upload incomplete: expected ${expectedBytes} bytes, wrote ${written}`
+      );
+      throw new UploadError("INCOMPLETE_UPLOAD");
     }
   } catch (error) {
     await fsp.rm(target, { force: true });

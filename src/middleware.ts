@@ -70,6 +70,9 @@ export const config = {
   matcher: [
     // Everything except Next.js internals and static image/meta files.
     // Uploaded videos stay behind the gate on purpose.
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpe?g|gif|svg|webp|ico|txt|xml|webmanifest)$).*)",
+    //
+    // `api/uploads` is excluded because middleware truncates large streamed
+    // request bodies. That route checks the admin session itself.
+    "/((?!_next/static|_next/image|favicon.ico|api/uploads|.*\\.(?:png|jpe?g|gif|svg|webp|ico|txt|xml|webmanifest)$).*)",
   ],
 };

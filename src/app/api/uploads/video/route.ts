@@ -11,6 +11,8 @@ export const maxDuration = 3600;
 
 const UPLOAD_ERROR_MESSAGES: Record<string, string> = {
   EMPTY_FILE: "Die Datei ist leer",
+  INCOMPLETE_UPLOAD:
+    "Die Übertragung wurde abgebrochen – bitte erneut versuchen",
   INVALID_FILE_TYPE: "Nur MP4- und WebM-Videos sind erlaubt",
 };
 
@@ -32,7 +34,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const videoPath = await saveVideoStream(request.body, mimeType);
+    const announced = Number(request.headers.get("content-length"));
+    const videoPath = await saveVideoStream(
+      request.body,
+      mimeType,
+      Number.isFinite(announced) ? announced : undefined
+    );
     return NextResponse.json({ videoPath }, { status: 201 });
   } catch (error) {
     if (error instanceof AuthError) {
